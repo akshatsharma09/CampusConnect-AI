@@ -20,25 +20,42 @@ A web application that helps college students find relevant hackathons, internsh
 npm install
 ```
 
-### 2. Firebase Setup
+### 2. Environment Variables
+1. Copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Fill in your actual API keys in `.env`:
+   - Firebase config from Firebase Console
+   - Gemini API key from Google AI Studio
+
+**⚠️ IMPORTANT**: Never commit your `.env` file with real API keys to version control!
+
+### 3. Firebase Setup
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Create a new project
 3. Enable Authentication with Google provider
 4. Enable Firestore Database
-5. Get your Firebase config and replace in `src/services/firebase.js`
-6. Add some sample opportunities to the "opportunities" collection in Firestore
+5. Add your Firebase config values to `.env`
+6. Add some sample opportunities to the "opportunities" collection in Firestore (or use the seed button in dev mode)
 
-### 3. Google Gemini API Setup
+### 4. Google Gemini API Setup
 1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Create an API key
-3. Replace `YOUR_GEMINI_API_KEY` in `src/services/gemini.js`
+3. Add the API key to `.env` as `VITE_GEMINI_API_KEY`
 
-### 4. Run the App
+### 5. Run the App
 ```bash
 npm run dev
 ```
 
-### 5. Deploy (Optional)
+### 6. Test AI Features
+- **AI Search**: Type natural language queries like "internships for AI students"
+- **AI Suggestions**: Click "Show AI suggestions" for query ideas
+- **Smart Filtering**: Gemini analyzes your query and finds the best matches
+
+### 7. Deploy (Optional)
 ```bash
 npm run build
 firebase deploy

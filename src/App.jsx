@@ -3,7 +3,6 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase';
 import Login from './pages/Login';
 import Home from './pages/Home';
-import './App.css'; // If needed, but using Tailwind
 
 function App() {
   const [user, setUser] = useState(null);
@@ -12,6 +11,7 @@ function App() {
   useEffect(() => {
     // Listen for authentication state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      console.log('Auth state changed:', currentUser ? 'User signed in' : 'No user');
       setUser(currentUser);
       setLoading(false);
     });

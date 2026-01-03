@@ -1,29 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { fetchOpportunities, seedDatabase } from '../services/opportunityService';
-import { searchOpportunitiesWithAI } from '../services/geminiService';
+import { searchOpportunitiesWithAI, generateQuerySuggestions } from '../services/gemini';
 import OpportunityCard from '../components/OpportunityCard';
 
 const Home = ({ user }) => {
+  console.log('Home component rendering, user:', user);
+
   const [query, setQuery] = useState('');
   const [allOpportunities, setAllOpportunities] = useState([]);
   const [displayedOpportunities, setDisplayedOpportunities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [aiReasons, setAiReasons] = useState({});
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
-      const data = await fetchOpportunities();
-      setAllOpportunities(data);
-      setDisplayedOpportunities(data);
+      try {
+        console.log('Loading opportunities...');
+        const data = await fetchOpportunities();
+        console.log('Loaded opportunities:', data);
+        setAllOpportunities(data);
+        setDisplayedOpportunities(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error loading opportunities:', err);
+        setError('Failed to load opportunities. Please check your Firebase configuration.');
+      } finally {
+        setInitialLoading(false);
+      }
     };
     loadData();
   }, []);
 
+  useEffect(() => {
+    console.log('🔄 Opportunities updated:', allOpportunities.length);
+  }, [allOpportunities]);
+
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      const suggs = await generateQuerySuggestions();
+      setSuggestions(suggs);
+    };
+    loadSuggestions();
+  }, []);
+
   const handleSearch = async (e) => {
     e.preventDefault();
+    console.log('🔎 Search initiated with query:', query);
+    console.log('📋 All opportunities available:', allOpportunities.length);
+
     if (!query.trim()) {
+      console.log('⚠️ Empty query, showing all opportunities');
       setDisplayedOpportunities(allOpportunities);
       setAiReasons({});
       return;
@@ -31,7 +63,10 @@ const Home = ({ user }) => {
 
     setLoading(true);
     try {
+      console.log('🚀 Calling AI search...');
       const recommendations = await searchOpportunitiesWithAI(query, allOpportunities);
+      console.log('🎯 AI search results:', recommendations);
+
       const filtered = [];
       const reasons = {};
       
@@ -43,22 +78,36 @@ const Home = ({ user }) => {
         }
       });
 
+      console.log('✅ Filtered opportunities:', filtered.length);
       setDisplayedOpportunities(filtered);
       setAiReasons(reasons);
+      setShowSuggestions(false); // Hide suggestions after search
     } catch (error) {
-      console.error("Search failed", error);
+      console.error("❌ Search failed:", error);
+      setError("AI search failed. Showing all opportunities instead.");
+      setDisplayedOpportunities(allOpportunities);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSuggestionClick = (suggestion) => {
+    setQuery(suggestion);
+    setShowSuggestions(false);
+  };
+
+  const toggleSuggestions = () => {
+    setShowSuggestions(!showSuggestions);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {console.log('Home component returning JSX')}
       <nav className="bg-white shadow-sm px-4 py-4 flex justify-between items-center">
         <h1 className="text-xl font-bold text-blue-600">CampusConnect AI</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600 hidden sm:block">{user.displayName}</span>
-          <button onClick={() => signOut(auth)} className="text-sm text-red-600 font-medium">Sign Out</button>
+          <button onClick={() => signOut(auth).catch(console.error)} className="text-sm text-red-600 font-medium">Sign Out</button>
         </div>
       </nav>
 
@@ -85,7 +134,32 @@ const Home = ({ user }) => {
               {loading ? 'Searching...' : 'Ask AI'}
             </button>
           </form>
-          <button onClick={seedDatabase} className="block mx-auto mt-2 text-xs text-gray-400 underline">(Dev: Seed Database)</button>
+
+          {suggestions.length > 0 && (
+            <div className="mt-4">
+              <button
+                onClick={toggleSuggestions}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                {showSuggestions ? 'Hide' : 'Show'} AI suggestions
+              </button>
+              {showSuggestions && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <button onClick={seedDatabase} className="block mx-auto mt-4 text-xs text-gray-400 underline">(Dev: Seed Database)</button>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -93,6 +167,25 @@ const Home = ({ user }) => {
             <OpportunityCard key={opp.id} opportunity={opp} reason={aiReasons[opp.id]} />
           ))}
         </div>
+
+        {initialLoading && (
+          <div className="text-center py-10">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-600">Loading opportunities...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-10">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              Retry
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

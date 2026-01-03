@@ -6,8 +6,10 @@ const Login = () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
+      console.log('Sign-in successful');
     } catch (error) {
       console.error('Error signing in:', error);
+      alert(`Sign-in failed: ${error.message}`);
     }
   };
 
