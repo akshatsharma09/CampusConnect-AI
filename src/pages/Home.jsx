@@ -3,7 +3,13 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { fetchOpportunities, seedDatabase } from '../services/opportunityService';
 import { searchOpportunitiesWithAI, generateQuerySuggestions } from '../services/gemini';
+import { fetchCampusContext, seedCampusDatabase } from '../services/campusService';
+import { askCampusAssistant } from '../services/campusChatbot';
+import { calculateRankingReasons, filterByCampus, sortByRelevance } from '../services/rankingEngine';
 import OpportunityCard from '../components/OpportunityCard';
+import CampusAssistant from '../components/CampusAssistant';
+import UserProfile from '../components/UserProfile';
+import HowItWorks from '../components/HowItWorks';
 
 const Home = ({ user }) => {
   console.log('Home component rendering, user:', user);
@@ -15,8 +21,14 @@ const Home = ({ user }) => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [aiReasons, setAiReasons] = useState({});
+  const [rankingDetails, setRankingDetails] = useState({});
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [campusContext, setCampusContext] = useState([]);
+  const [chatbotLoading, setChatbotLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -35,6 +47,28 @@ const Home = ({ user }) => {
       }
     };
     loadData();
+  }, []);
+
+  // Load user profile from localStorage
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      try {
+        setUserProfile(JSON.parse(savedProfile));
+        setShowHowItWorks(false);
+      } catch (e) {
+        console.error('Error parsing saved profile:', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const loadCampusContext = async () => {
+      const context = await fetchCampusContext();
+      setCampusContext(context);
+      console.log('✅ Campus context loaded:', context.length, 'documents');
+    };
+    loadCampusContext();
   }, []);
 
   useEffect(() => {
@@ -58,16 +92,30 @@ const Home = ({ user }) => {
       console.log('⚠️ Empty query, showing all opportunities');
       setDisplayedOpportunities(allOpportunities);
       setAiReasons({});
+      setRankingDetails({});
+      setError(null);
       return;
     }
 
     setLoading(true);
+    setError(null);
     try {
       console.log('🚀 Calling AI search...');
       const recommendations = await searchOpportunitiesWithAI(query, allOpportunities);
       console.log('🎯 AI search results:', recommendations);
 
-      const filtered = [];
+      // ✅ VALIDATION: Handle empty results cleanly
+      if (!recommendations || recommendations.length === 0) {
+        console.log('⚠️ No relevant opportunities found for query:', query);
+        setDisplayedOpportunities([]);
+        setAiReasons({});
+        setRankingDetails({});
+        setError(null);
+        setShowSuggestions(false);
+        return;
+      }
+
+      let filtered = [];
       const reasons = {};
       
       recommendations.forEach(rec => {
@@ -78,14 +126,29 @@ const Home = ({ user }) => {
         }
       });
 
+      // Apply campus filtering if user has profile
+      if (userProfile?.branch) {
+        filtered = filterByCampus(filtered, userProfile.branch);
+      }
+
+      // Calculate detailed ranking reasons
+      console.log('🎯 Calculating ranking reasons for filtered opportunities...');
+      const detailedReasons = await calculateRankingReasons(filtered, userProfile, query);
+      
+      // Sort by relevance score
+      filtered = sortByRelevance(filtered, detailedReasons);
+
       console.log('✅ Filtered opportunities:', filtered.length);
       setDisplayedOpportunities(filtered);
       setAiReasons(reasons);
-      setShowSuggestions(false); // Hide suggestions after search
+      setRankingDetails(detailedReasons);
+      setShowSuggestions(false);
     } catch (error) {
       console.error("❌ Search failed:", error);
-      setError("AI search failed. Showing all opportunities instead.");
-      setDisplayedOpportunities(allOpportunities);
+      setError("AI search failed. Please try again.");
+      setDisplayedOpportunities([]);
+      setAiReasons({});
+      setRankingDetails({});
     } finally {
       setLoading(false);
     }
@@ -100,93 +163,242 @@ const Home = ({ user }) => {
     setShowSuggestions(!showSuggestions);
   };
 
+  const handleCampusMessage = async (userMessage) => {
+    setChatbotLoading(true);
+    try {
+      const response = await askCampusAssistant(userMessage, campusContext);
+      return response;
+    } catch (error) {
+      console.error('Campus Assistant Error:', error);
+      return {
+        success: false,
+        message: "Campus Assistant encountered an error.",
+        refusal: false
+      };
+    } finally {
+      setChatbotLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {console.log('Home component returning JSX')}
-      <nav className="bg-white shadow-sm px-4 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-blue-600">CampusConnect AI</h1>
+    <div className="relative min-h-screen">
+      {/* Enhanced Gradient Background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 -z-20"></div>
+      
+      {/* Overlay gradient for depth */}
+      <div className="fixed inset-0 bg-gradient-to-tr from-indigo-900/20 via-transparent to-blue-400/20 -z-20"></div>
+
+      {/* Navigation Bar */}
+      <nav className="relative z-10 bg-white/10 backdrop-blur-md shadow-lg px-4 py-4 flex justify-between items-center border-b border-white/20">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold text-white drop-shadow-md">🎓 Campus Connect</h1>
+          {userProfile && (
+            <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+              ✓ Profile Ready
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600 hidden sm:block">{user.displayName}</span>
-          <button onClick={() => signOut(auth).catch(console.error)} className="text-sm text-red-600 font-medium">Sign Out</button>
+          <span className="text-sm text-blue-100 hidden sm:block drop-shadow">{user.displayName}</span>
+          <button 
+            onClick={() => setShowProfileModal(true)}
+            className="text-sm text-white font-medium bg-indigo-600/80 hover:bg-indigo-700 px-3 py-2 rounded-lg transition-all"
+          >
+            {userProfile ? '👤 Profile' : '➕ Add Profile'}
+          </button>
+          <button 
+            onClick={() => signOut(auth).catch(console.error)} 
+            className="text-sm text-white font-medium bg-red-500/80 hover:bg-red-600 px-4 py-2 rounded-lg transition-all"
+          >
+            Sign Out
+          </button>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-10">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-gray-900">Find Your Next Opportunity</h2>
-          <p className="mt-2 text-gray-500">Ask AI to find hackathons, internships, and workshops.</p>
-        </div>
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <UserProfile 
+          onProfileSubmit={(profile) => {
+            setUserProfile(profile);
+            setShowHowItWorks(false);
+          }}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
 
-        <div className="max-w-3xl mx-auto mb-12">
-          <form onSubmit={handleSearch} className="relative">
-            <input
-              type="text"
-              className="w-full px-6 py-4 rounded-full border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none text-lg"
-              placeholder="e.g., 'Internships for 3rd year CS students'"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="absolute right-2 top-2 bottom-2 bg-blue-600 text-white px-6 rounded-full font-medium hover:bg-blue-700 disabled:bg-blue-400"
-            >
-              {loading ? 'Searching...' : 'Ask AI'}
-            </button>
-          </form>
+      {/* How It Works Section */}
+      {showHowItWorks && <HowItWorks />}
 
-          {suggestions.length > 0 && (
-            <div className="mt-4">
-              <button
-                onClick={toggleSuggestions}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
-              >
-                {showSuggestions ? 'Hide' : 'Show'} AI suggestions
-              </button>
-              {showSuggestions && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
+      {/* Main Content */}
+      <main className="relative z-10 max-w-7xl mx-auto px-4 py-10">
+        {!showHowItWorks && (
+          <>
+            {/* Header */}
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-white drop-shadow-md">
+                🎯 Find Your Next Opportunity
+              </h2>
+              <p className="mt-2 text-blue-100 drop-shadow">
+                {userProfile 
+                  ? `Personalized recommendations for ${userProfile.year} year ${userProfile.branch} students`
+                  : 'Add your profile to get personalized recommendations'}
+              </p>
+            </div>
+
+            {/* Search Bar */}
+            <div className="max-w-3xl mx-auto mb-12">
+              <form onSubmit={handleSearch} className="relative">
+                <input
+                  type="text"
+                  className="w-full px-6 py-4 rounded-full border border-white/30 shadow-lg focus:ring-2 focus:ring-white outline-none text-lg bg-white/95 placeholder-gray-500"
+                  placeholder={userProfile 
+                    ? "e.g., 'AI internships' or 'Python hackathons'"
+                    : "e.g., 'Internships for 3rd year CS students'"}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="absolute right-2 top-2 bottom-2 bg-white text-indigo-600 px-6 rounded-full font-medium hover:bg-blue-50 disabled:bg-gray-300 transition-all shadow-md"
+                >
+                  {loading ? 'Searching...' : 'Ask AI'}
+                </button>
+              </form>
+
+              {/* Sample Queries */}
+              {suggestions.length > 0 && (
+                <div className="mt-4">
+                  <button
+                    onClick={toggleSuggestions}
+                    className="text-sm text-white hover:text-blue-100 underline drop-shadow font-medium"
+                  >
+                    {showSuggestions ? 'Hide' : 'Show'} sample queries
+                  </button>
+                  {showSuggestions && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {suggestions.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-sm text-white transition-all backdrop-blur-sm border border-white/30"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* Dev Buttons */}
+              <div className="mt-4 text-center space-y-1">
+                <button 
+                  onClick={seedDatabase} 
+                  className="block mx-auto text-xs text-white/70 underline hover:text-white/90 transition"
+                >
+                  (Dev: Seed Opportunities)
+                </button>
+                <button 
+                  onClick={seedCampusDatabase} 
+                  className="block mx-auto text-xs text-white/70 underline hover:text-white/90 transition"
+                >
+                  (Dev: Seed Campus Info)
+                </button>
+              </div>
             </div>
-          )}
 
-          <button onClick={seedDatabase} className="block mx-auto mt-4 text-xs text-gray-400 underline">(Dev: Seed Database)</button>
-        </div>
+            {/* Results Section */}
+            {initialLoading && (
+              <div className="text-center py-10">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                <p className="mt-2 text-white drop-shadow">Loading opportunities...</p>
+              </div>
+            )}
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {displayedOpportunities.map((opp) => (
-            <OpportunityCard key={opp.id} opportunity={opp} reason={aiReasons[opp.id]} />
-          ))}
-        </div>
+            {!initialLoading && query.trim() && displayedOpportunities.length === 0 && !error && (
+              <div className="text-center py-10">
+                <p className="text-white/90 drop-shadow font-semibold">
+                  No relevant opportunities found for "{query}"
+                </p>
+                <p className="mt-2 text-blue-100 drop-shadow text-sm">
+                  Try adjusting your search or view all opportunities by clearing the search.
+                </p>
+                <button 
+                  onClick={() => { 
+                    setQuery(''); 
+                    setDisplayedOpportunities(allOpportunities); 
+                    setAiReasons({}); 
+                    setRankingDetails({});
+                  }}
+                  className="mt-4 bg-white text-indigo-600 px-4 py-2 rounded font-medium hover:bg-blue-50 transition-all"
+                >
+                  Clear Search
+                </button>
+              </div>
+            )}
 
-        {initialLoading && (
-          <div className="text-center py-10">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Loading opportunities...</p>
-          </div>
-        )}
+            {error && (
+              <div className="text-center py-10">
+                <p className="text-white/90 mb-4 drop-shadow font-semibold">{error}</p>
+                <button 
+                  onClick={() => { 
+                    setError(null); 
+                    setQuery(''); 
+                    setDisplayedOpportunities(allOpportunities); 
+                    setRankingDetails({});
+                  }}
+                  className="bg-white text-indigo-600 px-4 py-2 rounded font-medium hover:bg-blue-50 transition-all"
+                >
+                  Clear Error
+                </button>
+              </div>
+            )}
 
-        {error && (
-          <div className="text-center py-10">
-            <p className="text-red-600 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-            >
-              Retry
-            </button>
-          </div>
+            {/* Opportunities Grid */}
+            {displayedOpportunities.length > 0 && (
+              <>
+                <div className="mb-6 text-white drop-shadow">
+                  <p className="font-semibold">
+                    Found {displayedOpportunities.length} opportunity(ies) {userProfile && `for your profile`}
+                  </p>
+                  {rankingDetails && Object.keys(rankingDetails).length > 0 && (
+                    <p className="text-sm text-blue-100 mt-1">
+                      ✨ Ranked by relevance using AI analysis
+                    </p>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {displayedOpportunities.map((opp) => (
+                    <OpportunityCard 
+                      key={opp.id} 
+                      opportunity={opp} 
+                      reason={aiReasons[opp.id] || rankingDetails[opp.id]?.reason}
+                      rankingDetails={rankingDetails[opp.id]}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {!initialLoading && !query.trim() && displayedOpportunities.length === 0 && (
+              <div className="text-center py-10">
+                <p className="text-white/90 drop-shadow font-semibold text-lg">
+                  👀 Start searching to find opportunities
+                </p>
+                <p className="mt-2 text-blue-100 drop-shadow">
+                  {userProfile 
+                    ? 'Use the search bar above to find internships, hackathons, and workshops tailored to you'
+                    : 'Complete your profile first to get personalized recommendations'}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </main>
+
+      {/* Campus Assistant Chatbot */}
+      <CampusAssistant onSendMessage={handleCampusMessage} loading={chatbotLoading} />
     </div>
   );
 };

@@ -24,16 +24,22 @@ const Admin = ({ user }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+    <div className="relative min-h-screen">
+      {/* Enhanced Gradient Background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 -z-20"></div>
+      
+      {/* Overlay gradient for depth */}
+      <div className="fixed inset-0 bg-gradient-to-tr from-indigo-900/20 via-transparent to-blue-400/20 -z-20"></div>
+
+      <header className="relative z-10 bg-white/10 backdrop-blur-md shadow-lg border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900">CampusConnect AI - Admin</h1>
+            <h1 className="text-3xl font-bold text-white drop-shadow-md">Campus Connect - Admin</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user.displayName}</span>
+              <span className="text-blue-100 font-medium drop-shadow">Welcome, {user.displayName}</span>
               <button
                 onClick={handleSignOut}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+                className="bg-red-500/80 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-all shadow-md"
               >
                 Sign Out
               </button>
@@ -42,23 +48,23 @@ const Admin = ({ user }) => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="relative z-10 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">All Opportunities</h2>
+          <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-md">All Opportunities</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {opportunities.map((opp) => (
-              <div key={opp.id} className="bg-white overflow-hidden shadow rounded-lg">
+              <div key={opp.id} className="bg-white/95 overflow-hidden shadow-lg rounded-lg backdrop-blur-sm hover:shadow-xl transition-all border border-white/20">
                 <div className="p-6">
-                  <h4 className="text-lg font-medium text-gray-900">{opp.title}</h4>
-                  <p className="text-sm text-gray-500 mt-1">{opp.type} - {opp.domain}</p>
-                  <p className="text-sm text-gray-600 mt-2">{opp.description}</p>
+                  <h4 className="text-lg font-bold text-indigo-600">{opp.title}</h4>
+                  <p className="text-sm text-gray-600 mt-1 font-medium">{opp.type} - {opp.domain}</p>
+                  <p className="text-sm text-gray-700 mt-2">{opp.description}</p>
                   <p className="text-xs text-gray-500 mt-2">Deadline: {opp.deadline}</p>
                   <p className="text-xs text-gray-500 mt-2">Eligible Year: {opp.eligibleYear}</p>
                   <a
                     href={opp.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+                    className="mt-4 inline-block bg-gradient-to-r from-indigo-600 to-blue-600 hover:shadow-lg text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
                   >
                     View Link
                   </a>
