@@ -5,12 +5,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCVGxzOqq41dCgFaMxFq8QAIWP38h6v7wc",
-  authDomain: "campusconnect-ai-e327e.firebaseapp.com",
-  projectId: "campusconnect-ai-e327e",
-  storageBucket: "campusconnect-ai-e327e.firebasestorage.app",
-  messagingSenderId: "892396954190",
-  appId: "1:892396954190:web:fda163027547069164191f"
+  apiKey: "your_firebase_api_key_here",
+  authDomain: "your_project_id.firebaseapp.com",
+  projectId: "your_project_id",
+  storageBucket: "your_project_id.firebasestorage.app",
+  messagingSenderId: "your_messaging_sender_id",
+  appId: "your_app_id"
 };
 
 // Validate config
