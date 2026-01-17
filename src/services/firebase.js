@@ -5,12 +5,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyCVGxzOqq41dCgFaMxFq8QAIWP38h6v7wc",
+  authDomain: "campusconnect-ai-e327e.firebaseapp.com",
+  projectId: "campusconnect-ai-e327e",
+  storageBucket: "campusconnect-ai-e327e.firebasestorage.app",
+  messagingSenderId: "892396954190",
+  appId: "1:892396954190:web:fda163027547069164191f"
 };
 
 // Validate config

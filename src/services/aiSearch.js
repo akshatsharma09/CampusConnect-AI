@@ -298,10 +298,10 @@ Example: [1, 3, 7]`;
   }
 };
 
-export const generateQuerySuggestions = async (userProfile = {}) => {
+export const generateQuerySuggestions = async () => {
   try {
     const modelsToTry = ["models/gemini-pro", "models/gemini-pro-vision", "models/gemini-1.0-pro"];
-    
+
     for (const modelName of modelsToTry) {
       try {
         console.log(`🔄 Trying model ${modelName} for suggestions`);
@@ -313,7 +313,7 @@ export const generateQuerySuggestions = async (userProfile = {}) => {
           - "Internships for computer science students in their 3rd year"
           - "Workshops on machine learning for beginners"
           - "Hackathons open to all years"
-          
+
           Return as JSON array of strings.
         `;
 
@@ -325,12 +325,12 @@ export const generateQuerySuggestions = async (userProfile = {}) => {
         continue;
       }
     }
-    
+
     // If all models fail, return fallback
     console.warn("All models failed for suggestions, using fallback");
     return [
       "Internships for computer science students",
-      "Workshops on AI and machine learning", 
+      "Workshops on AI and machine learning",
       "Hackathons for beginners",
       "Tech events in my city",
       "Opportunities for 2nd year students"
@@ -339,10 +339,78 @@ export const generateQuerySuggestions = async (userProfile = {}) => {
     console.error("❌ Error generating suggestions:", error);
     return [
       "Internships for computer science students",
-      "Workshops on AI and machine learning", 
+      "Workshops on AI and machine learning",
       "Hackathons for beginners",
       "Tech events in my city",
       "Opportunities for 2nd year students"
     ];
   }
+};
+
+// AI Metrics for Demo Readiness
+
+/**
+ * Calculate Precision@5: fraction of top 5 results that are relevant
+ * Assume relevant if AI score >= 7
+ */
+export const calculatePrecisionAt5 = (recommendations) => {
+  if (!recommendations || recommendations.length === 0) return 0;
+
+  const top5 = recommendations.slice(0, 5);
+  const relevant = top5.filter(rec => rec.score >= 7).length;
+  return relevant / top5.length;
+};
+
+/**
+ * Calculate Recall@10: fraction of relevant items retrieved in top 10
+ * Assume relevant if AI score >= 7, and total relevant is all with score >=7
+ */
+export const calculateRecallAt10 = (recommendations, allOpportunities) => {
+  if (!recommendations || recommendations.length === 0) return 0;
+
+  const top10 = recommendations.slice(0, 10);
+  const retrievedRelevant = top10.filter(rec => rec.score >= 7).length;
+  const totalRelevant = allOpportunities.filter(opp => {
+    // Find the recommendation score for this opportunity
+    const rec = recommendations.find(r => r.id === opp.id);
+    return rec && rec.score >= 7;
+  }).length;
+
+  return totalRelevant > 0 ? retrievedRelevant / totalRelevant : 0;
+};
+
+/**
+ * Track response time for AI calls
+ */
+export const trackResponseTime = async (aiFunction, ...args) => {
+  const startTime = Date.now();
+  try {
+    const result = await aiFunction(...args);
+    const endTime = Date.now();
+    const responseTime = endTime - startTime;
+    console.log(`⏱️ AI Response Time: ${responseTime}ms`);
+    return { result, responseTime };
+  } catch (error) {
+    const endTime = Date.now();
+    const responseTime = endTime - startTime;
+    console.error(`❌ AI Error after ${responseTime}ms:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get AI metrics summary
+ */
+export const getAIMetrics = (recommendations, allOpportunities) => {
+  const precisionAt5 = calculatePrecisionAt5(recommendations);
+  const recallAt10 = calculateRecallAt10(recommendations, allOpportunities);
+
+  return {
+    precisionAt5: (precisionAt5 * 100).toFixed(1) + '%',
+    recallAt10: (recallAt10 * 100).toFixed(1) + '%',
+    totalRecommendations: recommendations.length,
+    averageScore: recommendations.length > 0
+      ? (recommendations.reduce((sum, rec) => sum + rec.score, 0) / recommendations.length).toFixed(1)
+      : 0
+  };
 };

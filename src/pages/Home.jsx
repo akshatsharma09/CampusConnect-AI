@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { fetchOpportunities, seedDatabase } from '../services/opportunityService';
-import { searchOpportunitiesWithAI, generateQuerySuggestions } from '../services/gemini';
+import { searchOpportunitiesWithAI, generateQuerySuggestions } from '../services/aiSearch';
 import { fetchCampusContext, seedCampusDatabase } from '../services/campusService';
 import { askCampusAssistant } from '../services/campusChatbot';
 import { calculateRankingReasons, filterByCampus, sortByRelevance } from '../services/rankingEngine';
@@ -10,6 +10,7 @@ import OpportunityCard from '../components/OpportunityCard';
 import CampusAssistant from '../components/CampusAssistant';
 import UserProfile from '../components/UserProfile';
 import HowItWorks from '../components/HowItWorks';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const Home = ({ user }) => {
   console.log('Home component rendering, user:', user);
@@ -356,7 +357,16 @@ const Home = ({ user }) => {
             )}
 
             {/* Opportunities Grid */}
-            {displayedOpportunities.length > 0 && (
+            {loading ? (
+              <>
+                <div className="mb-6 text-white drop-shadow">
+                  <p className="font-semibold">Searching for opportunities...</p>
+                </div>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <LoadingSkeleton count={6} />
+                </div>
+              </>
+            ) : displayedOpportunities.length > 0 && (
               <>
                 <div className="mb-6 text-white drop-shadow">
                   <p className="font-semibold">
@@ -370,9 +380,9 @@ const Home = ({ user }) => {
                 </div>
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {displayedOpportunities.map((opp) => (
-                    <OpportunityCard 
-                      key={opp.id} 
-                      opportunity={opp} 
+                    <OpportunityCard
+                      key={opp.id}
+                      opportunity={opp}
                       reason={aiReasons[opp.id] || rankingDetails[opp.id]?.reason}
                       rankingDetails={rankingDetails[opp.id]}
                     />
