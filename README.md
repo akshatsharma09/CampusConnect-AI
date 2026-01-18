@@ -130,11 +130,11 @@ graph TB
 *User authentication interface with Firebase integration*
 
 ### Event Cards with Explanations
-![Event Cards](screenshots/Event-Cards-with-Explanations.png)
+![Event Cards](screenshots/Event-Cards-with-Explainations.png)
 *Detailed opportunity cards showing matching factors and verification badges*
 
 ### Campus Assistant Chatbot
-![Chatbot](screenshots/AI-Assistant.png)
+![Chatbot](screenshots/AI-Assisstant.png)
 *AI-powered assistant with sample queries and campus-focused responses*
 
 ---
