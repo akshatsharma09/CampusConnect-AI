@@ -122,19 +122,19 @@ graph TB
 ## 📸 Demo / Screenshots
 
 ### Homepage Dashboard
-![Homepage](screenshots/Homepage.png)
+<img src="screenshots/Homepage.png" alt="Homepage" width="400">
 *Clean, intuitive interface with search bar and featured opportunities*
 
 ### Login Page
-![Login Page](screenshots/Login-Page.png)
+<img src="screenshots/Login-Page.png" alt="Login Page" width="400">
 *User authentication interface with Firebase integration*
 
 ### Event Cards with Explanations
-![Event Cards](screenshots/Event-Cards-with-Explainations.png)
+<img src="screenshots/Event-Cards-with-Explainations.png" alt="Event Cards" width="400">
 *Detailed opportunity cards showing matching factors and verification badges*
 
 ### Campus Assistant Chatbot
-![Chatbot](screenshots/AI-Assisstant.png)
+<img src="screenshots/AI-Assisstant.png" alt="Chatbot" width="400">
 *AI-powered assistant with sample queries and campus-focused responses*
 
 ---
