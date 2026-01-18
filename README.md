@@ -126,15 +126,15 @@ graph TB
 *Clean, intuitive interface with search bar and featured opportunities*
 
 ### Login Page
-![Login Page](screenshots/Login Page.png)
+![Login Page](screenshots/Login-Page.png)
 *User authentication interface with Firebase integration*
 
 ### Event Cards with Explanations
-![Event Cards](screenshots/Event Cards with Explanations.png)
+![Event Cards](screenshots/Event-Cards-with-Explanations.png)
 *Detailed opportunity cards showing matching factors and verification badges*
 
 ### Campus Assistant Chatbot
-![Chatbot](screenshots/AI Assistant.png)
+![Chatbot](screenshots/AI-Assistant.png)
 *AI-powered assistant with sample queries and campus-focused responses*
 
 ---
