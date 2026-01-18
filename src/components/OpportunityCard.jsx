@@ -31,7 +31,7 @@ const OpportunityCard = ({ opportunity, reason, rankingDetails }) => {
   const isUrgent = daysUntil && daysUntil <= 14 && daysUntil > 0;
 
   return (
-    <div className="bg-white/95 overflow-hidden shadow-lg rounded-lg backdrop-blur-sm hover:shadow-xl transition-all border border-white/20 hover:border-indigo-300">
+    <div className="bg-white/95 overflow-hidden card-shadow rounded-lg backdrop-blur-sm transition-all duration-300 border border-white/20 hover:border-indigo-300 hover:shadow-2xl hover:scale-105 hover:-translate-y-1">
       <div className="p-6">
         {/* Header with type badge and badges */}
         <div className="flex items-start justify-between mb-3">
@@ -40,6 +40,11 @@ const OpportunityCard = ({ opportunity, reason, rankingDetails }) => {
             <p className="text-sm text-gray-600 mt-1 font-medium">{opportunity.type || 'N/A'} - {opportunity.domain || 'N/A'}</p>
           </div>
           <div className="flex flex-col gap-2">
+            {rankingDetails?.score !== undefined && rankingDetails.score > 80 && (
+              <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                🔥 Popular
+              </span>
+            )}
             {opportunity.campusVerified && (
               <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
                 🏛️ Campus Verified
@@ -103,9 +108,9 @@ const OpportunityCard = ({ opportunity, reason, rankingDetails }) => {
           href={opportunity.link || '#'}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-block w-full text-center bg-gradient-to-r from-indigo-600 to-blue-600 hover:shadow-lg text-white px-4 py-2 rounded-lg text-sm font-medium transition-all hover:from-indigo-700 hover:to-blue-700"
+          className="mt-4 inline-block w-full text-center bg-gradient-to-r from-indigo-600 to-blue-600 hover:shadow-xl hover:scale-105 text-white px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:from-indigo-700 hover:to-blue-700 active:scale-95"
         >
-          Apply Now
+          Apply Now →
         </a>
       </div>
     </div>

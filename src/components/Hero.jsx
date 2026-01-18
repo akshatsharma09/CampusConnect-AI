@@ -42,10 +42,10 @@ const Hero = () => {
         {/* Hero Headline */}
         <div className="mb-10 animate-fade-in-delay">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-white drop-shadow-md">
-            Find Your Next Opportunity
+            Land Your Dream <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">Internships</span>, <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">Hackathons</span>, and <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Placements</span> with Verified Campus Opportunities
           </h2>
           <p className="text-lg sm:text-xl text-blue-100 drop-shadow-md">
-            AI-powered search for internships, hackathons, and workshops tailored to you
+            Verified opportunities tailored to your year, skills, and campus.
           </p>
         </div>
 

@@ -122,23 +122,20 @@ graph TB
 ## 📸 Demo / Screenshots
 
 ### Homepage Dashboard
-![Homepage](screenshots/homepage.png)
+![Homepage](screenshots/Homepage.png)
 *Clean, intuitive interface with search bar and featured opportunities*
 
-### AI Search Results
-![Search Results](screenshots/search-results.png)
-*Ranked recommendations with explainable reasons and confidence scores*
+### Login Page
+![Login Page](screenshots/Login Page.png)
+*User authentication interface with Firebase integration*
 
 ### Event Cards with Explanations
-![Event Cards](screenshots/event-cards.png)
+![Event Cards](screenshots/Event Cards with Explanations.png)
 *Detailed opportunity cards showing matching factors and verification badges*
 
 ### Campus Assistant Chatbot
-![Chatbot](screenshots/chatbot.png)
+![Chatbot](screenshots/AI Assistant.png)
 *AI-powered assistant with sample queries and campus-focused responses*
-
-### Live Demo
-🚀 **[View Live Demo](https://campusconnect-ai.vercel.app)** (Deployed on Vercel)
 
 ---
 

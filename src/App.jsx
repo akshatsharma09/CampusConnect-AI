@@ -3,15 +3,22 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import Landing from './pages/Landing';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState('landing');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+      if (currentUser) {
+        setCurrentView('home');
+      } else {
+        setCurrentView('landing');
+      }
     });
 
     return () => unsubscribe();
@@ -27,7 +34,13 @@ function App() {
 
   return (
     <div className="App">
-      {user ? <Home user={user} /> : <Login />}
+      {user ? (
+        <Home user={user} />
+      ) : currentView === 'login' ? (
+        <Login onBackToLanding={() => setCurrentView('landing')} />
+      ) : (
+        <Landing onNavigateToLogin={() => setCurrentView('login')} />
+      )}
     </div>
   );
 }

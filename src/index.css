@@ -29,4 +29,48 @@
   .animate-fade-in-delay-3 {
     animation: fade-in 0.8s ease-out 0.6s both;
   }
+
+  /* Campus-inspired button gradient */
+  .btn-gradient {
+    background: linear-gradient(135deg, #14B8A6 0%, #1E3A8A 100%);
+  }
+
+  .btn-gradient:hover {
+    background: linear-gradient(135deg, #0F9A8A 0%, #152E6A 100%);
+  }
+
+  /* Subtle brick texture pattern for campus vibe */
+  .texture-brick {
+    background-image:
+      radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 1px, transparent 1px),
+      radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Enhanced card shadows for depth */
+  .card-shadow {
+    box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.1), 0 4px 6px -2px rgba(30, 58, 138, 0.05);
+  }
+
+  .card-shadow:hover {
+    box-shadow: 0 20px 40px -10px rgba(30, 58, 138, 0.15), 0 8px 16px -4px rgba(30, 58, 138, 0.1);
+  }
+
+  /* Collage background for login */
+  .collage-bg {
+    background-image:
+      url('https://images.unsplash.com/photo-1564981797816-1043664bf78d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'),
+      url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'),
+      url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'),
+      url('https://images.unsplash.com/photo-1509062522246-3755977927d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'),
+      url('https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80');
+    background-size: cover, cover, cover, cover, cover;
+    background-position: 0% 0%, 20% 20%, 40% 40%, 60% 60%, 80% 80%;
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+    background-blend-mode: multiply;
+  }
+
+  .collage-overlay {
+    background: rgba(0, 0, 0, 0.4);
+  }
 }

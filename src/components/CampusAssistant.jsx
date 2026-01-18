@@ -10,7 +10,6 @@ const CampusAssistant = ({ onSendMessage, loading = false }) => {
   const sampleQueries = [
     '📅 When is the placement drive?',
     '💼 How do I register for internships?',
-    '🎓 What are the hostel rules?',
     '🏆 When is TechFest?',
     '❓ How do I use CampusConnect?'
   ];
@@ -78,14 +77,14 @@ const CampusAssistant = ({ onSendMessage, loading = false }) => {
             {messages.length === 0 ? (
               <div className="text-center text-gray-600 text-sm py-4">
                 <p className="font-semibold mb-3">👋 Hi! I'm your Campus Assistant</p>
-                <p className="mb-3 text-xs">Ask me about placements, internships, campus rules, events, or how to use CampusConnect.</p>
+                <p className="mb-3 text-xs">Ask me about verified internships, hackathons, placements, campus rules, events, or how to use CampusConnect.</p>
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-gray-700 mb-2">📌 Quick Questions:</p>
                   {sampleQueries.map((query, idx) => (
                     <button
                       key={idx}
                       onClick={(e) => handleSendMessage(e, query)}
-                      className="w-full text-left text-xs bg-white hover:bg-indigo-50 p-2 rounded border border-gray-200 hover:border-indigo-400 transition cursor-pointer truncate"
+                      className="w-full text-left text-xs bg-white hover:bg-indigo-50 p-3 rounded-lg border border-gray-200 hover:border-indigo-400 transition-all duration-200 cursor-pointer truncate shadow-sm hover:shadow-md"
                     >
                       {query}
                     </button>
@@ -96,21 +95,22 @@ const CampusAssistant = ({ onSendMessage, loading = false }) => {
               messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} opacity-0 animate-[fade-in_0.5s_ease-in-out_forwards]`}
+                  style={{ animationDelay: `${idx * 0.1}s` }}
                 >
                   <div
-                    className={`max-w-xs px-4 py-2 rounded-lg ${
+                    className={`max-w-xs px-4 py-3 rounded-lg shadow-sm ${
                       msg.role === 'user'
                         ? 'bg-indigo-600 text-white rounded-br-none'
                         : msg.isRefusal
                           ? 'bg-yellow-100 text-gray-800 rounded-bl-none border border-yellow-300'
-                          : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                          : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
                     }`}
                   >
                     {msg.role === 'user' ? (
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                     ) : (
-                      <ReactMarkdown className="text-sm prose prose-sm max-w-none">
+                      <ReactMarkdown className="text-sm prose prose-sm max-w-none leading-relaxed">
                         {msg.content}
                       </ReactMarkdown>
                     )}
