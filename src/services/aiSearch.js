@@ -15,11 +15,11 @@ const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 export const getAvailableModels = async () => {
   try {
     // Note: listModels might not be available in this version
-    console.log('📋 Using known Gemini models: models/gemini-pro, models/gemini-pro-vision, models/gemini-1.0-pro');
-    return ['models/gemini-pro', 'models/gemini-pro-vision', 'models/gemini-1.0-pro'];
+    console.log('📋 Using known Gemini models: gemini-1.5-flash-001, gemini-1.0-pro');
+    return ['gemini-1.5-flash-001', 'gemini-1.5-flash', 'gemini-1.0-pro', 'gemini-pro'];
   } catch (error) {
     console.error('❌ Error with models:', error);
-    return ['models/gemini-pro']; // fallback
+    return ['gemini-1.5-flash-001']; // fallback
   }
 };
 
@@ -78,7 +78,7 @@ Match opportunities from the database only. Return JSON array:
 [{"id": "exact_id_from_database", "reason": "2-3 sentence explanation", "score": 1-10}]`;
 
     // Try different models in order of preference
-    const modelsToTry = ["models/gemini-pro", "models/gemini-pro-vision", "models/gemini-1.0-pro"];
+    const modelsToTry = ["gemini-1.5-flash-001", "gemini-1.5-flash", "gemini-1.0-pro", "gemini-pro"];
     
     for (const modelName of modelsToTry) {
       try {
@@ -92,9 +92,7 @@ Match opportunities from the database only. Return JSON array:
           }
         });
 
-        const result = await model.generateContent([
-          { role: "user", parts: [{ text: systemPrompt + "\n\n" + userMessage }] }
-        ]);
+        const result = await model.generateContent(systemPrompt + "\n\n" + userMessage);
 
         const text = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
         console.log('✅ Gemini response:', text);
@@ -153,7 +151,7 @@ export const classifyCampusIntent = async (userMessage) => {
   }
 
   try {
-    const modelsToTry = ["models/gemini-pro", "models/gemini-pro-vision", "models/gemini-1.0-pro"];
+    const modelsToTry = ["gemini-1.5-flash-001", "gemini-1.5-flash", "gemini-1.0-pro", "gemini-pro"];
     
     for (const modelName of modelsToTry) {
       try {
@@ -202,8 +200,8 @@ Respond with ONLY ONE WORD:
     throw new Error("All models failed for intent classification");
   } catch (error) {
     console.error("❌ Intent classification error:", error);
-    // Default to NON_CAMPUS for safety
-    return "NON_CAMPUS";
+    // Default to CAMPUS to allow RAG to attempt an answer even if classification fails
+    return "CAMPUS";
   }
 };
 
@@ -228,11 +226,13 @@ export const findRelevantCampusContext = async (userMessage, allCampusDocuments 
 
   if (!API_KEY || !genAI) {
     console.error('❌ No Gemini API key for context retrieval');
-    return [];
+    // Fall through to keyword search if API key is missing
   }
 
+  // 1. Try Semantic Search with Gemini
+  if (API_KEY && genAI) {
   try {
-    const modelsToTry = ["models/gemini-pro", "models/gemini-pro-vision", "models/gemini-1.0-pro"];
+    const modelsToTry = ["gemini-1.5-flash-001", "gemini-1.5-flash", "gemini-1.0-pro", "gemini-pro"];
     
     for (const modelName of modelsToTry) {
       try {
@@ -270,8 +270,8 @@ Example: [1, 3, 7]`;
           const indices = JSON.parse(response);
           
           if (!Array.isArray(indices)) {
-            console.warn('⚠️ Invalid response format, returning empty');
-            return [];
+            console.warn('⚠️ Invalid response format from AI');
+            continue; // Try next model
           }
 
           // Filter to valid indices and get documents
@@ -279,28 +279,42 @@ Example: [1, 3, 7]`;
             .filter(idx => Number.isInteger(idx) && idx >= 0 && idx < allCampusDocuments.length)
             .map(idx => allCampusDocuments[idx]);
 
-          console.log(`✅ Found ${relevantDocs.length} relevant documents`);
-          return relevantDocs;
+          if (relevantDocs.length > 0) {
+            console.log(`✅ Found ${relevantDocs.length} relevant documents via AI`);
+            return relevantDocs;
+          }
         } catch (parseError) {
           console.warn('⚠️ Failed to parse ranking response:', response);
-          return [];
+          continue;
         }
       } catch (modelError) {
         console.warn(`⚠️ Model ${modelName} failed for context retrieval:`, modelError.message);
         continue;
       }
     }
-    
-    throw new Error("All models failed for context retrieval");
   } catch (error) {
     console.error("❌ Context retrieval error:", error);
-    return [];
   }
+  }
+
+  // 2. Fallback: Keyword Search
+  console.log('⚠️ AI returned no results or failed. Switching to keyword fallback.');
+  const queryTerms = userMessage.toLowerCase().split(/\s+/).filter(word => word.length > 3);
+  
+  if (queryTerms.length === 0) return [];
+
+  const fallbackDocs = allCampusDocuments.filter(doc => {
+    const content = `${doc.title} ${doc.content} ${doc.category}`.toLowerCase();
+    return queryTerms.some(term => content.includes(term));
+  });
+
+  console.log(`✅ Keyword fallback found ${fallbackDocs.length} documents`);
+  return fallbackDocs.slice(0, 3);
 };
 
 export const generateQuerySuggestions = async () => {
   try {
-    const modelsToTry = ["models/gemini-pro", "models/gemini-pro-vision", "models/gemini-1.0-pro"];
+    const modelsToTry = ["gemini-1.5-flash-001", "gemini-1.5-flash", "gemini-1.0-pro", "gemini-pro"];
 
     for (const modelName of modelsToTry) {
       try {

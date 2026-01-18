@@ -298,9 +298,6 @@ const rankingWeights = {
 
 ## 👥 Contributors & Acknowledgements
 
-**Core Team:**
-- **BLACKBOXAI** - Lead Developer & AI Engineer ([GitHub](https://github.com/blackboxai))
-
 **Technologies & Partners:**
 - **Google Gemini AI** - For powering intelligent search and chatbot
 - **Firebase** - For authentication, database, and hosting

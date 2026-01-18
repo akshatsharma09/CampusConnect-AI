@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './services/firebase';
-import Login from './pages/Login';
-import Home from './pages/Home';
+import { auth } from '../services/firebase';
 
-function App() {
+const ProtectedRoute = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,11 +23,7 @@ function App() {
     );
   }
 
-  return (
-    <div className="App">
-      {user ? <Home user={user} /> : <Login />}
-    </div>
-  );
-}
+  return user ? children : null;
+};
 
-export default App;
+export default ProtectedRoute;

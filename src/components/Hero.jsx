@@ -1,5 +1,6 @@
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../services/firebase';
+import toast, { Toaster } from 'react-hot-toast';
 import HeroBackground from './HeroBackground';
 
 const Hero = () => {
@@ -10,7 +11,7 @@ const Hero = () => {
       console.log('Sign-in successful');
     } catch (error) {
       console.error('Error signing in:', error);
-      alert(`Sign-in failed: ${error.message}`);
+      toast.error(`Sign-in failed: ${error.message}`);
     }
   };
 
@@ -70,6 +71,8 @@ const Hero = () => {
           ))}
         </div>
       </div>
+
+      <Toaster position="top-right" />
     </div>
   );
 };

@@ -33,17 +33,24 @@ const OpportunityCard = ({ opportunity, reason, rankingDetails }) => {
   return (
     <div className="bg-white/95 overflow-hidden shadow-lg rounded-lg backdrop-blur-sm hover:shadow-xl transition-all border border-white/20 hover:border-indigo-300">
       <div className="p-6">
-        {/* Header with type badge and verification */}
+        {/* Header with type badge and badges */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h4 className="text-lg font-bold text-indigo-600">{opportunity.title || 'Untitled'}</h4>
             <p className="text-sm text-gray-600 mt-1 font-medium">{opportunity.type || 'N/A'} - {opportunity.domain || 'N/A'}</p>
           </div>
-          {opportunity.campusVerified && (
-            <div className="ml-2 flex-shrink-0 bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
-              ✓ Verified
-            </div>
-          )}
+          <div className="flex flex-col gap-2">
+            {opportunity.campusVerified && (
+              <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                🏛️ Campus Verified
+              </span>
+            )}
+            {isUrgent && (
+              <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                ⏰ Urgent Deadline
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Description */}
@@ -59,12 +66,13 @@ const OpportunityCard = ({ opportunity, reason, rankingDetails }) => {
           </div>
         </div>
 
-        {/* Urgency Indicator */}
-        {isUrgent && (
-          <div className="mt-3 bg-orange-50 border border-orange-200 rounded px-3 py-2">
-            <p className="text-xs font-semibold text-orange-800">
-              ⏰ Deadline in {daysUntil} days!
-            </p>
+
+
+        {/* AI Match Score - Prominent Display */}
+        {rankingDetails?.score !== undefined && (
+          <div className="mt-4 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-lg px-4 py-3 text-center">
+            <p className="text-lg font-bold">AI Match Score</p>
+            <p className="text-2xl font-extrabold">{rankingDetails.score}/100</p>
           </div>
         )}
 

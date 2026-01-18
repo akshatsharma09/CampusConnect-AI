@@ -29,7 +29,7 @@ export const calculateRankingReasons = async (opportunities, userProfile, query)
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "models/gemini-pro",
+      model: "gemini-1.5-flash-001",
       generationConfig: {
         temperature: 0.3,
         topK: 5,

@@ -1,25 +1,24 @@
 // Firebase configuration
-// TODO: Replace with your Firebase project config from Firebase Console
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "your_firebase_api_key_here",
-  authDomain: "your_project_id.firebaseapp.com",
-  projectId: "your_project_id",
-  storageBucket: "your_project_id.firebasestorage.app",
-  messagingSenderId: "your_messaging_sender_id",
-  appId: "your_app_id"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Validate config
-const requiredFields = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
-const missingFields = requiredFields.filter(field => !firebaseConfig[field] || firebaseConfig[field].startsWith('your_'));
+const requiredFields = ['apiKey', 'authDomain', 'projectId'];
+const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
 
 if (missingFields.length > 0) {
-  console.error('Firebase config is incomplete. Missing fields:', missingFields);
-  throw new Error('Firebase configuration is incomplete. Please check your .env file.');
+  console.error('❌ Firebase config is incomplete. Missing fields:', missingFields);
+  console.error('⚠️ Make sure you have created a .env file in the root directory with VITE_FIREBASE_... keys');
 }
 
 // Initialize Firebase
@@ -34,6 +33,9 @@ try {
 
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
+
+// Initialize Google Auth Provider
+export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Cloud Firestore and get a reference to the service
 export const db = getFirestore(app);

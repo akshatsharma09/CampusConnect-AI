@@ -105,7 +105,7 @@ Question:`;
 Answer based ONLY on the provided context. Do not add external knowledge or make assumptions.`;
 
     const model = genAI.getGenerativeModel({ 
-      model: "models/gemini-pro",
+      model: "gemini-1.5-flash-001",
       generationConfig: {
         temperature: 0.3, // ✅ Slightly higher for natural responses, but strict with context
         topK: 5,
@@ -115,9 +115,7 @@ Answer based ONLY on the provided context. Do not add external knowledge or make
     });
 
     // Send to Gemini with strict context
-    const result = await model.generateContent([
-      { role: "user", parts: [{ text: systemPrompt + "\n" + userPrompt }] }
-    ]);
+    const result = await model.generateContent(systemPrompt + "\n" + userPrompt);
 
     const responseText = result.response.text().trim();
     console.log('✅ Campus Assistant response:', responseText);

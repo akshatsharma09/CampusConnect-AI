@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 const CampusAssistant = ({ onSendMessage, loading = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -101,12 +102,18 @@ const CampusAssistant = ({ onSendMessage, loading = false }) => {
                     className={`max-w-xs px-4 py-2 rounded-lg ${
                       msg.role === 'user'
                         ? 'bg-indigo-600 text-white rounded-br-none'
-                        : msg.isRefusal 
+                        : msg.isRefusal
                           ? 'bg-yellow-100 text-gray-800 rounded-bl-none border border-yellow-300'
                           : 'bg-gray-200 text-gray-800 rounded-bl-none'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    {msg.role === 'user' ? (
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    ) : (
+                      <ReactMarkdown className="text-sm prose prose-sm max-w-none">
+                        {msg.content}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 </div>
               ))
@@ -114,11 +121,7 @@ const CampusAssistant = ({ onSendMessage, loading = false }) => {
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-gray-200 px-4 py-2 rounded-lg rounded-bl-none">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
+                  <p className="text-sm text-gray-600">Typing...</p>
                 </div>
               </div>
             )}

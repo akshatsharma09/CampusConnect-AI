@@ -15,8 +15,11 @@
     "@google/generative-ai": "^0.21.0",
     "axios": "^1.13.2",
     "firebase": "^10.7.1",
+    "lucide-react": "^0.562.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.28.6",

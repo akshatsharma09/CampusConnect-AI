@@ -132,12 +132,18 @@ export const seedDatabase = async () => {
     for (const item of sampleData) {
       await addDoc(collection(db, COLLECTION_NAME), item);
     }
-    alert("Database seeded with sample data! Refresh the page to see new opportunities.");
+    console.log("Database seeded with sample data! Refresh the page to see new opportunities.");
   } catch (error) {
     console.error("Error seeding database:", error);
-    alert("Failed to seed database. Check console for details.");
+    // TODO: Replace with toast notification
   }
 };
+
+// 🛠️ Expose for console debugging
+if (typeof window !== 'undefined') {
+  window.seedOpportunities = seedDatabase;
+  console.log('🛠️ Debug: window.seedOpportunities() is available in console');
+}
 
 // Real Event Data Integration
 
@@ -253,16 +259,16 @@ export const syncRealEvents = async () => {
       }
 
       console.log(`🎉 Successfully synced ${newEvents.length} real events`);
-      alert(`Synced ${newEvents.length} real events from MLH, DevPost, and HackerEarth!`);
+      // TODO: Replace with toast notification
     } else {
       console.log('ℹ️ No new events to sync');
-      alert('No new events to sync. All events are up to date!');
+      // TODO: Replace with toast notification
     }
 
     return newEvents.length;
   } catch (error) {
     console.error('❌ Error syncing real events:', error);
-    alert('Failed to sync real events. Check console for details.');
+    // TODO: Replace with toast notification
     return 0;
   }
 };
