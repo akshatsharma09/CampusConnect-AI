@@ -102,13 +102,13 @@ graph TB
 
 The project uses a modern frontend stack, but the main intelligence lives in the backend and AI layers.
 
-Frontend
+# 🌐 Frontend
 
 React + Vite
 
 Clean UI focused on clarity, speed, and transparency
 
-🔥 Firebase – Backend Backbone
+# 🔥 Firebase – Backend Backbone
 
 Firebase acts as the serverless backend infrastructure for the platform.
 
@@ -134,7 +134,7 @@ Real-time Capabilities
 
 New opportunities appear instantly for users when added or synced, without requiring page refreshes.
 
-🧠 Google Gemini – Intelligence Layer
+# 🧠 Google Gemini – Intelligence Layer
 
 Google Gemini is the primary AI engine responsible for understanding queries, ranking results, and generating explanations.
 
@@ -163,7 +163,7 @@ Campus verification – 15%
 
 This allows the platform to explain why an opportunity is recommended.
 
-🤖 Campus Assistant Chatbot
+# 🤖 Campus Assistant Chatbot
 
 Performs intent classification to ensure campus-only queries
 
@@ -173,7 +173,7 @@ Configured with low temperature (0.2) for deterministic responses
 
 Politely refuses off-topic questions
 
-📐 Google Vertex AI – Vector Matching Layer
+# 📐 Google Vertex AI – Vector Matching Layer
 
 Vertex AI is implemented as an advanced matching layer but is currently disabled in the live demo for stability.
 
@@ -307,7 +307,7 @@ npm run build
 npm run preview
 ```
 
-Configuration Notes
+# Configuration Notes
 
 Firebase Security Rules: Configure Firestore rules for read/write access
 
@@ -320,4 +320,5 @@ Secrets: Never commit service account JSON files (e.g., `service-account.json`) 
 ## 👤 Author
 
 Built and maintained by Akshat Sharma
+
 B.Tech – Artificial Intelligence & Machine Learning
