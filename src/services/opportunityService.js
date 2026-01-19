@@ -1,6 +1,7 @@
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from './firebase';
 import axios from 'axios';
+import { generateEmbedding } from './vertexAI';
 
 const COLLECTION_NAME = 'opportunities';
 
@@ -9,11 +10,46 @@ export const fetchOpportunities = async () => {
     const opportunitiesRef = collection(db, COLLECTION_NAME);
     const snapshot = await getDocs(opportunitiesRef);
     const opportunities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return opportunities;
+
+    // Ensure embeddings are generated for opportunities that don't have them
+    const opportunitiesWithEmbeddings = await ensureEmbeddings(opportunities);
+    return opportunitiesWithEmbeddings;
   } catch (error) {
     console.error('Error fetching opportunities:', error);
     return [];
   }
+};
+
+/**
+ * Makes sure all opportunities have embeddings, creates them if needed
+ * @param {Array} opportunities
+ * @returns {Promise<Array>}
+ */
+const ensureEmbeddings = async (opportunities) => {
+  const results = [];
+
+  for (const opp of opportunities) {
+    if (!opp.embedding_vector) {
+      console.log(`Generating embedding for: ${opp.title}`);
+      const text = `${opp.title} ${opp.description || ''} ${opp.domain || ''}`;
+      const embedding = await generateEmbedding(text);
+
+      if (embedding) {
+        // Update in Firestore
+        try {
+          const oppRef = doc(db, COLLECTION_NAME, opp.id);
+          await updateDoc(oppRef, { embedding_vector: embedding });
+          opp.embedding_vector = embedding;
+          console.log(`Updated embedding for: ${opp.title}`);
+        } catch (updateError) {
+          console.error(`Failed to update embedding for ${opp.title}:`, updateError);
+        }
+      }
+    }
+    results.push(opp);
+  }
+
+  return results;
 };
 
 export const seedDatabase = async () => {
@@ -139,16 +175,16 @@ export const seedDatabase = async () => {
   }
 };
 
-// 🛠️ Expose for console debugging
+// Expose for console debugging
 if (typeof window !== 'undefined') {
   window.seedOpportunities = seedDatabase;
-  console.log('🛠️ Debug: window.seedOpportunities() is available in console');
+  console.log('Debug: window.seedOpportunities() is available in console');
 }
 
 // Real Event Data Integration
 
 /**
- * Fetch events from MLH (Major League Hacking)
+ * Gets hackathon events from MLH
  */
 export const fetchMLHEvents = async () => {
   try {
@@ -172,7 +208,7 @@ export const fetchMLHEvents = async () => {
 };
 
 /**
- * Fetch hackathons from DevPost
+ * Gets hackathons from DevPost
  */
 export const fetchDevPostEvents = async () => {
   try {
@@ -199,7 +235,7 @@ export const fetchDevPostEvents = async () => {
 };
 
 /**
- * Fetch events from HackerEarth
+ * Gets coding events from HackerEarth
  */
 export const fetchHackerEarthEvents = async () => {
   try {
@@ -226,11 +262,11 @@ export const fetchHackerEarthEvents = async () => {
 };
 
 /**
- * Sync real events to Firebase
+ * Adds real hackathon events to the database
  */
 export const syncRealEvents = async () => {
   try {
-    console.log('🔄 Starting real events sync...');
+    console.log('Starting real events sync...');
 
     // Fetch from all sources
     const [mlhEvents, devpostEvents, hackerearthEvents] = await Promise.all([
@@ -240,7 +276,7 @@ export const syncRealEvents = async () => {
     ]);
 
     const allRealEvents = [...mlhEvents, ...devpostEvents, ...hackerearthEvents];
-    console.log(`📊 Fetched ${allRealEvents.length} real events`);
+    console.log(`Fetched ${allRealEvents.length} real events`);
 
     // Filter out duplicates and existing events
     const existingOpportunities = await fetchOpportunities();
@@ -250,7 +286,7 @@ export const syncRealEvents = async () => {
       !existingTitles.has(event.title) && event.title
     );
 
-    console.log(`✅ ${newEvents.length} new events to add`);
+    console.log(`${newEvents.length} new events to add`);
 
     // Add new events to Firebase
     if (newEvents.length > 0) {
@@ -258,16 +294,16 @@ export const syncRealEvents = async () => {
         await addDoc(collection(db, COLLECTION_NAME), event);
       }
 
-      console.log(`🎉 Successfully synced ${newEvents.length} real events`);
+      console.log(`Successfully synced ${newEvents.length} real events`);
       // TODO: Replace with toast notification
     } else {
-      console.log('ℹ️ No new events to sync');
+      console.log('No new events to sync');
       // TODO: Replace with toast notification
     }
 
     return newEvents.length;
   } catch (error) {
-    console.error('❌ Error syncing real events:', error);
+    console.error('Error syncing real events:', error);
     // TODO: Replace with toast notification
     return 0;
   }

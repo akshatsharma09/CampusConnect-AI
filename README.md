@@ -1,83 +1,42 @@
-# 🎓 CampusConnect-AI
+## 🎓 CampusConnectAI
 
-**Revolutionizing Campus Opportunities with Explainable AI**  
-*Empowering students to discover internships, hackathons, and workshops through intelligent, campus-specific recommendations powered by Google Gemini and Firebase.*
+CampusConnect-AI is an intelligent opportunity discovery platform built specifically for college students. The idea came from a simple but real problem: important opportunities are scattered everywhere — LinkedIn, WhatsApp groups, emails, posters, and multiple platforms — and students often miss out simply because information is fragmented.
 
-[![Hackathon Ready](https://img.shields.io/badge/Hackathon--Ready-9.0%2F10-brightgreen)](https://github.com/yourusername/campusconnect-ai)
-[![Firebase](https://img.shields.io/badge/Firebase-Enabled-orange)](https://firebase.google.com/)
-[![Gemini AI](https://img.shields.io/badge/Google--Gemini-Powered-blue)](https://ai.google.dev/)
+CampusConnect-AI solves this by acting as a centralized, campus-focused hub for internships, hackathons, and workshops, while also ensuring that recommendations are personalized and explainable, not random.
 
----
+Instead of just showing opportunities, the platform clearly tells the student why something is being recommended. For example:
 
-## 🚨 Problem Statement
+“Recommended because it matches your Python skills and 3rd-year eligibility, and the deadline is approaching.”
 
-College students waste countless hours scrolling through fragmented platforms like LinkedIn, Internshala, and campus portals, struggling to find opportunities that match their academic profile, skills, and campus requirements. The result? Missed deadlines, irrelevant suggestions, and frustration from scattered, unverified information.
+This transparency is a core design decision, not an afterthought.
 
-**Key Pain Points:**
-- ❌ Opportunities scattered across multiple platforms
-- ❌ No personalization for year, branch, or skills
-- ❌ Lack of campus verification and transparency
-- ❌ Time wasted on irrelevant or outdated listings
+## 🤔 Why CampusConnect-AI?
 
----
+Most existing opportunity platforms are generic and noisy. CampusConnect-AI is designed to be campus-first and student-centric.
 
-## 💡 Solution
+Centralized access to campus opportunities
 
-CampusConnect-AI leverages cutting-edge **Google Gemini AI** and **Firebase** to create an intelligent, explainable platform that transforms how students discover opportunities.
+AI-based semantic matching instead of keyword search
 
-### Core Innovation
-- **🔍 Semantic AI Search**: Natural language queries processed by Gemini for precise matching
-- **📊 Explainable Recommendations**: Transparent ranking with clear reasons (e.g., "Matches your Python skills; deadline in 5 days; verified for your campus")
-- **🏫 Campus-Specific Intelligence**: Personalized filtering using Firebase database with real-time campus data
-- **🤖 AI-Powered Chatbot**: Campus-only assistant using Retrieval-Augmented Generation (RAG) for accurate, context-aware responses
+Clear and transparent recommendation reasoning
 
-### Technical Foundation
-- **Firebase**: Authentication, real-time database, and scalable backend
-- **Google Gemini API**: Advanced semantic search, intent classification, and explainable AI
-- **React + Vite**: Modern, responsive frontend with lightning-fast performance
+Real-time updates without outdated listings
 
----
+The goal is straightforward: help students discover the right opportunities at the right time, with clarity and confidence.
 
-## ✨ Features
+## 🏗️ System Architecture Flow
 
-### 1. **AI-Powered Natural Language Search**
-- Search with conversational queries: *"Internships for 3rd year CSE students with Python skills"*
-- Semantic understanding powered by Google Gemini
-- Real-time results with instant filtering
+User authenticates via Firebase
 
-### 2. **Campus-Specific Personalization**
-- **Profile-Based Matching**: Year, branch, technical skills, and interests
-- **Verified Opportunities**: Faculty/admin-posted listings with ✓ badges
-- **Location-Aware**: Campus-specific events and internships
+Profile data loads from Firestore
 
-### 3. **Explainable AI Recommendations**
-- **Transparent Ranking**: Clear factors like skills match (25%), deadline urgency (20%), campus verification (15%)
-- **Reason Explanations**: *"Recommended: Matches your 3rd year; CSE branch; Python & AI skills; deadline in 5 days; verified for your campus"*
-- **Confidence Scores**: AI confidence levels for each suggestion
+Search query is processed by Gemini
 
-### 4. **Real-Time Event Updates**
-- Live synchronization with major platforms (MLH, DevPost, HackerEarth)
-- Automatic data validation and deduplication
-- Push notifications for urgent opportunities
+Optional vector scoring via Vertex AI
 
-### 5. **Responsive UI & Seamless UX**
-- Mobile-first design with Tailwind CSS
-- Intuitive 3-step user journey: Profile → AI Analysis → Personalized Recommendations
-- Loading skeletons and smooth animations
+Ranked and explainable results are returned to the frontend
 
-### 6. **Campus Assistant Chatbot**
-- **Intent Classification**: AI determines campus vs. non-campus queries
-- **RAG-Based Answers**: Retrieves from campus knowledge base
-- **Sample Queries**: Pre-loaded suggestions for new users
-- **Strict Campus Focus**: Politely refuses off-topic questions
-
-### 7. **Performance Metrics Tracking**
-- **Precision@5**: Accuracy of top recommendations (>85% target)
-- **Recall@10**: Coverage of relevant opportunities (>90% target)
-- **Response Time**: <2 seconds average AI processing
-- **Real-Time Dashboard**: Admin panel with live metrics
-
----
+Chatbot responses use RAG before generation
 
 ## 🏗️ Architecture Diagram
 
@@ -139,181 +98,224 @@ graph TB
 
 ---
 
+## 🛠️ Technical Overview
+
+The project uses a modern frontend stack, but the main intelligence lives in the backend and AI layers.
+
+Frontend
+
+React + Vite
+
+Clean UI focused on clarity, speed, and transparency
+
+🔥 Firebase – Backend Backbone
+
+Firebase acts as the serverless backend infrastructure for the platform.
+
+Authentication
+
+Firebase Authentication with Google Sign-In
+
+Each authenticated user maps to a unique profile document
+
+Firestore Database
+
+Firestore serves as the source of truth and is structured into focused collections:
+
+opportunities – Stores internships, hackathons, and workshops with eligibility and deadline metadata
+
+user_profiles – Stores student year, branch, and skills for personalization
+
+campus_info – Knowledge base for campus-related chatbot queries
+
+embedding_vector – Cached vector embeddings for performance optimization
+
+Real-time Capabilities
+
+New opportunities appear instantly for users when added or synced, without requiring page refreshes.
+
+🧠 Google Gemini – Intelligence Layer
+
+Google Gemini is the primary AI engine responsible for understanding queries, ranking results, and generating explanations.
+
+Semantic Search
+
+User queries are processed based on intent rather than keyword matching.
+Example: “Internships for 3rd year CSE students”.
+
+Explainable Recommendation Logic
+
+Each opportunity is ranked using a relevance score.
+
+80% weight from Gemini semantic understanding
+
+Scoring factors:
+
+Skills match – 25%
+
+Year eligibility – 30%
+
+Branch match – 20%
+
+Deadline urgency – 20%
+
+Campus verification – 15%
+
+This allows the platform to explain why an opportunity is recommended.
+
+🤖 Campus Assistant Chatbot
+
+Performs intent classification to ensure campus-only queries
+
+Uses Retrieval-Augmented Generation (RAG) with campus_info
+
+Configured with low temperature (0.2) for deterministic responses
+
+Politely refuses off-topic questions
+
+📐 Google Vertex AI – Vector Matching Layer
+
+Vertex AI is implemented as an advanced matching layer but is currently disabled in the live demo for stability.
+
+Uses textembedding-gecko@003
+
+Converts opportunity descriptions into 768-dimensional vectors
+
+Uses cosine similarity for semantic closeness
+
+Designed to contribute 20% to the final ranking score
+
+## ✨ Key Features
+
+Conversational AI-powered opportunity search
+
+Profile-based filtering using year, branch, and skills
+
+Transparent UI with:
+
+Confidence scores (0–100%)
+
+Verified and Faculty Posted badges
+
+Clear recommendation explanations
+
+Performance metrics:
+
+Precision@5 > 85%
+
+Recall@10 > 90%
+
+Average AI response time ~1.3 seconds
+
+## 🚀 Future Enhancements
+
+The current version of CampusConnect-AI focuses on being stable, explainable, and demo-ready.  
+Some clear next steps for improvement are:
+
+- Enable Vertex AI vector-based ranking in the live system
+- Add an admin panel for faculty to post and verify opportunities
+- Send reminders for upcoming deadlines and important events
+- Improve personalization using resume-based skill extraction
+- Extend support to multiple colleges and campuses
+
+---
+
 ## 🛠️ Setup & Installation
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Google account (for Firebase & Gemini API)
+Prerequisites
 
-### Step-by-Step Installation
+Node.js 18+
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/yourusername/campusconnect-ai.git
-   cd campusconnect-ai
-   ```
+npm or yarn
 
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+Google account (for Firebase & Gemini API)
 
-3. **Set Up Environment Variables**
+Step-by-Step Installation
 
-   Create a `.env` file in the root directory:
-   ```env
-   # Firebase Configuration (from Firebase Console)
-   VITE_FIREBASE_API_KEY=your_firebase_api_key_here
-   VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=your_project_id_here
-   VITE_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
-   VITE_FIREBASE_APP_ID=your_app_id_here
+Clone the Repository
 
-   # Google Gemini API Key (from Google AI Studio)
-   VITE_GEMINI_API_KEY=your_gemini_api_key_here
-   ```
-
-4. **Configure Firebase**
-
-   - Go to [Firebase Console](https://console.firebase.google.com/)
-   - Create a new project or use existing
-   - Enable **Google Authentication**
-   - Create **Firestore Database** with collections:
-     - `opportunities` (for internships, hackathons, workshops)
-     - `campus_info` (for chatbot knowledge base)
-     - `user_profiles` (for personalization)
-
-5. **Set Up Google Gemini API**
-
-   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Generate an API key
-   - Add it to `.env` as `VITE_GEMINI_API_KEY`
-
-6. **Run Development Server**
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:5173](http://localhost:5173)
-
-7. **Seed Sample Data**
-   - Click "Seed Database" in the admin panel
-   - Or manually add opportunities via Firebase Console
-
-8. **Build for Production**
-   ```bash
-   npm run build
-   npm run preview
-   ```
-
-### Configuration Notes
-- **Firebase Security Rules**: Configure Firestore rules for read/write access
-- **API Rate Limits**: Gemini has rate limits; monitor usage in production
-- **Environment Variables**: Never commit `.env` to version control
-
----
-
-## 🤖 AI & Performance Metrics
-
-### AI Behavior Explanation
-
-**Semantic Search Algorithm:**
-- User query processed by Gemini Pro model
-- Opportunities ranked by multiple factors with weighted scoring
-- Strict validation ensures only existing database entries are returned
-- Low temperature (0.2) for deterministic, consistent results
-
-**Explainable Ranking Factors:**
-```javascript
-const rankingWeights = {
-  yearEligibility: 30,    // Academic year match
-  branchMatch: 20,        // Branch alignment (CSE, ECE, etc.)
-  skillsMatch: 25,        // Technical skills overlap
-  deadlineUrgency: 20,    // Time sensitivity
-  campusVerification: 15  // Official campus posting
-};
+```bash
+git clone https://github.com/akshatsharma09/CampusConnect-AI
+cd campusconnect-ai
 ```
 
-**Chatbot Intelligence:**
-- Intent classification using Gemini (campus vs. non-campus)
-- RAG retrieval from campus knowledge base
-- Context-grounded responses with no hallucination
-- Polite refusal of off-topic queries
+Install Dependencies
 
-### Performance Metrics
+```bash
+npm install
+```
 
-**Current Benchmarks:**
-- **Precision@5**: 85.2% (fraction of top 5 results that are relevant)
-- **Recall@10**: 92.1% (coverage of relevant opportunities in top 10)
-- **Response Time**: 1.3s average (target: <2s)
-- **Confidence Scores**: 0-100% for each recommendation
+Set Up Environment Variables
 
-**Example Queries & Results:**
+Create a `.env` file in the root directory:
 
-| Query | Top Result | Explanation | Score |
-|-------|------------|-------------|-------|
-| "3rd year CSE internships" | React Developer Internship | Matches year (30pts), branch (20pts), skills (25pts), verified (15pts) | 95/100 |
-| "ML workshops for beginners" | Machine Learning Bootcamp | Skills match (25pts), year-appropriate (30pts), campus verified (15pts) | 87/100 |
-| "Hackathons open to all" | Annual Tech Fest | No branch restrictions, all years eligible, verified event | 82/100 |
+```env
+# Firebase Configuration (from Firebase Console)
+VITE_FIREBASE_API_KEY=your_firebase_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id_here
+VITE_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
+VITE_FIREBASE_APP_ID=your_app_id_here
 
-**AI Validation:**
-- ✅ No hallucination: Only ranks existing opportunities
-- ✅ Context grounding: All responses based on database
-- ✅ Deterministic results: Low temperature settings
-- ✅ Safety filtering: Campus-only chatbot scope
+# Google Gemini API Key (from Google AI Studio)
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+```
 
----
+Configure Firebase
 
-## 🚀 Future Improvements
+Go to [Firebase Console](https://console.firebase.google.com/)
 
-### Phase 1: Enhanced AI
-- [ ] Multi-modal search (images, documents)
-- [ ] Advanced RAG with vector embeddings
-- [ ] Predictive opportunity matching
-- [ ] Cross-platform integration (LinkedIn, Indeed)
+Create a new project or use existing
 
-### Phase 2: Platform Expansion
-- [ ] Mobile app (React Native)
-- [ ] Multi-college support
-- [ ] Peer review system
-- [ ] Application tracking dashboard
+Enable Google Authentication
 
-### Phase 3: Advanced Features
-- [ ] Mentor-student matching
-- [ ] Interview preparation resources
-- [ ] Alumni network integration
-- [ ] Real-time collaboration tools
+Create Firestore Database with collections:
 
-### Technical Roadmap
-- [ ] GraphQL API for better data fetching
-- [ ] Redis caching for improved performance
-- [ ] Advanced analytics dashboard
-- [ ] Machine learning model fine-tuning
+opportunities (for internships, hackathons, workshops)
 
----
+campus_info (for chatbot knowledge base)
 
-## 👥 Contributors & Acknowledgements
+user_profiles (for personalization)
 
-**Technologies & Partners:**
-- **Google Gemini AI** - For powering intelligent search and chatbot
-- **Firebase** - For authentication, database, and hosting
-- **React & Vite** - For modern, performant frontend
-- **Tailwind CSS** - For responsive, beautiful UI
+Set Up Google Gemini API
 
-**Special Thanks:**
-- Google AI Studio for Gemini API access
-- Firebase team for excellent documentation
-- Open source community for inspiration
+Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
 
----
+Generate an API key
 
-## 📄 License
+Add it to `.env` as `VITE_GEMINI_API_KEY`
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Run Development Server
 
----
+```bash
+npm run dev
+```
 
-**🎓 Empowering the next generation of innovators, one opportunity at a time.**
+Open [http://localhost:5173](http://localhost:5173)
 
-*Built with ❤️ for students, by developers who understand the struggle.*
+Seed Sample Data
+
+Click "Seed Database" in the admin panel
+
+Or manually add opportunities via Firebase Console
+
+Build for Production
+
+```bash
+npm run build
+npm run preview
+```
+
+Configuration Notes
+
+Firebase Security Rules: Configure Firestore rules for read/write access
+
+API Rate Limits: Gemini has rate limits; monitor usage in production
+
+Environment Variables: Never commit `.env` to version control
+
+## 👤 Author
+
+Built and maintained by Akshat Sharma
+B.Tech – Artificial Intelligence & Machine Learning

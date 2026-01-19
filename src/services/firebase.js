@@ -17,8 +17,8 @@ const requiredFields = ['apiKey', 'authDomain', 'projectId'];
 const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
 
 if (missingFields.length > 0) {
-  console.error('❌ Firebase config is incomplete. Missing fields:', missingFields);
-  console.error('⚠️ Make sure you have created a .env file in the root directory with VITE_FIREBASE_... keys');
+  console.error('Firebase config is incomplete. Missing fields:', missingFields);
+  console.error('Make sure you have created a .env file in the root directory with VITE_FIREBASE_... keys');
 }
 
 // Initialize Firebase

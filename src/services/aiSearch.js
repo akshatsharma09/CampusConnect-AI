@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateEmbedding, computeSemanticSimilarities } from './vertexAI';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 console.log('Gemini API Key loaded:', API_KEY ? 'Yes' : 'No');
@@ -6,7 +7,7 @@ console.log('API Key length:', API_KEY ? API_KEY.length : 0);
 console.log('API Key starts with:', API_KEY ? API_KEY.substring(0, 10) + '...' : 'No key');
 
 if (!API_KEY) {
-  console.error('❌ No Gemini API key found in environment variables');
+  console.error('No Gemini API key found in environment variables');
 }
 
 const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
@@ -15,44 +16,57 @@ const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 export const getAvailableModels = async () => {
   try {
     // Note: listModels might not be available in this version
-    console.log('📋 Using known Gemini models: gemini-1.5-flash-001, gemini-1.0-pro');
+    console.log('Using known Gemini models: gemini-1.5-flash-001, gemini-1.0-pro');
     return ['gemini-1.5-flash-001', 'gemini-1.5-flash', 'gemini-1.0-pro', 'gemini-pro'];
   } catch (error) {
-    console.error('❌ Error with models:', error);
+    console.error('Error with models:', error);
     return ['gemini-1.5-flash-001']; // fallback
   }
 };
 
 export const searchOpportunitiesWithAI = async (query, opportunities) => {
-  console.log('🔍 Starting AI search for query:', query);
-  console.log('📊 Available opportunities:', opportunities.length);
+  console.log('Starting AI search for query:', query);
+  console.log('Available opportunities:', opportunities.length);
 
-  // ✅ VALIDATION 1: Check query is provided
+  // Check if query is provided
   if (!query || !query.trim()) {
-    console.log('❌ No query provided');
+    console.log('No query provided');
     return [];
   }
 
-  // ✅ VALIDATION 2: Check opportunities exist in database BEFORE calling Gemini
+  // Make sure we have opportunities in the database
   if (!opportunities || opportunities.length === 0) {
-    console.warn('⚠️ No opportunities in database - returning empty');
+    console.warn('No opportunities in database - returning empty');
     return [];
   }
 
-  // ✅ VALIDATION 3: Check API key exists
+  // Check if API key is set
   if (!API_KEY || !genAI) {
-    console.error('❌ No Gemini API key found or genAI not initialized');
+    console.error('No Gemini API key found or genAI not initialized');
     return [];
   }
 
   try {
-    console.log('🤖 Calling Gemini API with context...');
-    
-    // ✅ VALIDATION 4: Ensure Gemini only receives database context + user query
-    // Never pass raw user input alone to avoid injection attacks
+    console.log('Starting hybrid AI search...');
+
+    // Generate query embedding using Vertex AI
+    console.log('Generating query embedding...');
+    const queryEmbedding = await generateEmbedding(query);
+    if (!queryEmbedding) {
+      console.warn('Failed to generate query embedding, falling back to Gemini only');
+    }
+
+    // Compute semantic similarities if embeddings available
+    let opportunitiesWithSimilarity = opportunities;
+    if (queryEmbedding) {
+      opportunitiesWithSimilarity = computeSemanticSimilarities(queryEmbedding, opportunities);
+      console.log('Computed semantic similarities for all opportunities');
+    }
+
+    // Step 3: Get Gemini recommendations
     const availableModels = await getAvailableModels();
-    console.log('📋 Available Gemini models:', availableModels);
-    
+    console.log('Available Gemini models:', availableModels);
+
     // Strict prompt: ONLY filter from existing opportunities, NEVER generate new ones
     const systemPrompt = `You are a search assistant that ONLY ranks and filters existing opportunities.
 
@@ -66,7 +80,7 @@ CRITICAL RULES:
 Your task:
 - Analyze the user query
 - Find matching opportunities from the database
-- Rank by relevance (top 3 max)
+- Rank by relevance (top 5 max to allow for semantic merging)
 - For each match, explain why it matches`;
 
     const userMessage = `Query: "${query}"
@@ -79,14 +93,15 @@ Match opportunities from the database only. Return JSON array:
 
     // Try different models in order of preference
     const modelsToTry = ["gemini-1.5-flash-001", "gemini-1.5-flash", "gemini-1.0-pro", "gemini-pro"];
-    
+
+    let geminiRecommendations = [];
     for (const modelName of modelsToTry) {
       try {
-        console.log(`🔄 Trying model: ${modelName}`);
-        const model = genAI.getGenerativeModel({ 
+        console.log('Trying model:', modelName);
+        const model = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: {
-            temperature: 0.2, // ✅ Low temperature for deterministic results
+            temperature: 0.2, // Low temperature for deterministic results
             topK: 5,
             topP: 0.5,
           }
@@ -95,137 +110,168 @@ Match opportunities from the database only. Return JSON array:
         const result = await model.generateContent(systemPrompt + "\n\n" + userMessage);
 
         const text = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
-        console.log('✅ Gemini response:', text);
+        console.log('Gemini response:', text);
 
-        // ✅ VALIDATION 5: Parse and verify results
+        // Parse and check the results
         const recommendations = JSON.parse(text);
-        
+
         if (!Array.isArray(recommendations)) {
-          console.warn('⚠️ Gemini response is not an array, treating as empty');
-          return [];
+          console.warn('Gemini response is not an array, treating as empty');
+          continue;
         }
 
-        // ✅ VALIDATION 6: Verify all returned IDs actually exist in database
-        const validRecommendations = recommendations.filter(rec => {
+        // Make sure all IDs are real
+        geminiRecommendations = recommendations.filter(rec => {
           const exists = opportunities.some(opp => opp.id === rec.id);
           if (!exists) {
-            console.warn(`🚨 Gemini returned non-existent ID: ${rec.id} - FILTERING OUT`);
+            console.warn(`Gemini returned non-existent ID: ${rec.id} - FILTERING OUT`);
           }
           return exists;
         });
 
-        console.log(`✅ Valid recommendations: ${validRecommendations.length} (filtered from ${recommendations.length})`);
-
-        // Sort by score descending
-        return validRecommendations.sort((a, b) => b.score - a.score);
+        console.log(`Valid Gemini recommendations: ${geminiRecommendations.length} (filtered from ${recommendations.length})`);
+        break; // Success, exit loop
       } catch (modelError) {
-        console.warn(`⚠️ Model ${modelName} failed:`, modelError.message);
+        console.warn(`Model ${modelName} failed:`, modelError.message);
         continue; // Try next model
       }
     }
-    
-    // If all models fail, throw the last error
-    throw new Error("All Gemini models failed");
+
+    if (geminiRecommendations.length === 0) {
+      console.warn('No Gemini recommendations, returning empty');
+      return [];
+    }
+
+    // For demo, just use Gemini scores
+    console.log('Using Gemini-only scores for demo...');
+    const mergedRecommendations = geminiRecommendations.map(geminiRec => {
+      const opportunity = opportunitiesWithSimilarity.find(opp => opp.id === geminiRec.id);
+
+      // Gemini-only score (normalized 0-1)
+      const combinedScore = geminiRec.score / 10;
+
+      // Use Gemini reason only (no semantic enhancement for demo)
+      const enhancedReason = geminiRec.reason;
+
+      return {
+        opportunityId: geminiRec.id,
+        title: opportunity?.title || 'Unknown',
+        description: opportunity?.description || 'No description',
+        combinedScore: combinedScore,
+        explanation: enhancedReason
+      };
+    });
+
+    // Sort by combined score and return top results
+    const finalRecommendations = mergedRecommendations
+      .sort((a, b) => b.combinedScore - a.combinedScore)
+      .slice(0, 5); // Return top 5
+
+    console.log(`Final recommendations: ${finalRecommendations.length} (Gemini-only for demo)`);
+    return finalRecommendations;
   } catch (error) {
-    console.error("❌ Gemini API Error:", error);
-    // ✅ SAFE FALLBACK: Return empty array instead of inventing results
+    console.error("Hybrid AI Search Error:", error);
+    // SAFE FALLBACK: Return empty array instead of inventing results
     return [];
   }
 };
 
 /**
- * 🧠 SEMANTIC INTENT CLASSIFIER - NO KEYWORDS
- * Uses Gemini to classify if a query is campus-related
- * Returns: "CAMPUS" or "NON_CAMPUS"
+ * Classifies what the user is asking about using AI
+ * Returns "OPPORTUNITY", "CAMPUS_INFO", or "NON_CAMPUS"
  */
 export const classifyCampusIntent = async (userMessage) => {
-  console.log('🧠 Classifying intent for message:', userMessage);
+  console.log('Classifying intent for message:', userMessage);
 
   if (!userMessage || !userMessage.trim()) {
     return "NON_CAMPUS"; // Default to non-campus for empty messages
   }
 
   if (!API_KEY || !genAI) {
-    console.error('❌ No Gemini API key found for intent classification');
+    console.error('No Gemini API key found for intent classification');
     return "NON_CAMPUS";
   }
 
   try {
     const modelsToTry = ["gemini-1.5-flash-001", "gemini-1.5-flash", "gemini-1.0-pro", "gemini-pro"];
-    
+
     for (const modelName of modelsToTry) {
       try {
-        const model = genAI.getGenerativeModel({ 
+        const model = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: {
-            temperature: 0.1, // ✅ Minimal temperature for consistent classification
+            temperature: 0.1, // Minimal temperature for consistent classification
             topK: 1,
             topP: 0,
             maxOutputTokens: 20
           }
         });
 
-        const classificationPrompt = `You are a campus query classifier. 
-Analyze the following query and determine if it is related to:
-- Campus operations or infrastructure
-- Placements or recruitment
-- Internships or hackathons
-- Student life or college events
-- Campus rules or academic policies
-- How to use campus-related platforms/apps
-- Any on-campus or college-organized activities
+        const classificationPrompt = `You are a campus query classifier.
+Analyze the following query and classify it into one of three categories:
+
+OPPORTUNITY: Queries about finding or searching for internships, hackathons, workshops, jobs, placements, or career opportunities.
+
+CAMPUS_INFO: Queries about campus operations, infrastructure, rules, policies, events, student life, how to use platforms, or general campus information.
+
+NON_CAMPUS: Queries that are not related to campus or opportunities at all.
 
 Query: "${userMessage}"
 
 Respond with ONLY ONE WORD:
-- "CAMPUS" if the query is campus-related
-- "NON_CAMPUS" if it is not campus-related`;
+- "OPPORTUNITY" for opportunity-related queries
+- "CAMPUS_INFO" for campus information queries
+- "NON_CAMPUS" for non-campus queries`;
 
         const result = await model.generateContent(classificationPrompt);
         const response = result.response.text().trim().toUpperCase();
-        
-        // Extract classification (handle cases with extra text)
-        const classification = response.includes("CAMPUS") && !response.includes("NON_CAMPUS") 
-          ? "CAMPUS" 
-          : "NON_CAMPUS";
-        
-        console.log('✅ Intent classified as:', classification);
+
+        // Extract classification
+        let classification = "NON_CAMPUS"; // default
+        if (response.includes("OPPORTUNITY")) {
+          classification = "OPPORTUNITY";
+        } else if (response.includes("CAMPUS_INFO")) {
+          classification = "CAMPUS_INFO";
+        } else if (response.includes("NON_CAMPUS")) {
+          classification = "NON_CAMPUS";
+        }
+
+        console.log('Intent classified as:', classification);
         return classification;
       } catch (modelError) {
-        console.warn(`⚠️ Model ${modelName} failed for classification:`, modelError.message);
+        console.warn(`Model ${modelName} failed for classification:`, modelError.message);
         continue;
       }
     }
-    
+
     throw new Error("All models failed for intent classification");
   } catch (error) {
-    console.error("❌ Intent classification error:", error);
-    // Default to CAMPUS to allow RAG to attempt an answer even if classification fails
-    return "CAMPUS";
+    console.error("Intent classification error:", error);
+    // Default to CAMPUS_INFO to allow some response
+    return "CAMPUS_INFO";
   }
 };
 
 /**
- * 🔍 SEMANTIC CONTEXT RETRIEVAL - RAG
- * Finds most relevant campus documents for the user query
- * Uses Gemini to semantically rank documents by relevance
+ * Finds the best campus docs for the user's question
+ * Uses AI to rank them by how relevant they are
  */
 export const findRelevantCampusContext = async (userMessage, allCampusDocuments = []) => {
-  console.log('🔍 Finding relevant context for:', userMessage);
-  console.log('📚 Available documents:', allCampusDocuments.length);
+  console.log('Finding relevant context for:', userMessage);
+  console.log('Available documents:', allCampusDocuments.length);
 
   if (!userMessage || !userMessage.trim()) {
-    console.log('⚠️ Empty message, returning empty context');
+    console.log('Empty message, returning empty context');
     return [];
   }
 
   if (!allCampusDocuments || allCampusDocuments.length === 0) {
-    console.log('⚠️ No campus documents available');
+    console.log('No campus documents available');
     return [];
   }
 
   if (!API_KEY || !genAI) {
-    console.error('❌ No Gemini API key for context retrieval');
+    console.error('No Gemini API key for context retrieval');
     // Fall through to keyword search if API key is missing
   }
 
@@ -239,7 +285,7 @@ export const findRelevantCampusContext = async (userMessage, allCampusDocuments 
         const model = genAI.getGenerativeModel({ 
           model: modelName,
           generationConfig: {
-            temperature: 0.1, // ✅ Low temperature for consistent ranking
+            temperature: 0.1, // Low temperature for consistent ranking
             topK: 3,
             topP: 0.3,
             maxOutputTokens: 1000
@@ -270,7 +316,7 @@ Example: [1, 3, 7]`;
           const indices = JSON.parse(response);
           
           if (!Array.isArray(indices)) {
-            console.warn('⚠️ Invalid response format from AI');
+            console.warn('Invalid response format from AI');
             continue; // Try next model
           }
 
@@ -280,27 +326,27 @@ Example: [1, 3, 7]`;
             .map(idx => allCampusDocuments[idx]);
 
           if (relevantDocs.length > 0) {
-            console.log(`✅ Found ${relevantDocs.length} relevant documents via AI`);
+            console.log(`Found ${relevantDocs.length} relevant documents via AI`);
             return relevantDocs;
           }
         } catch (parseError) {
-          console.warn('⚠️ Failed to parse ranking response:', response);
+          console.warn('Failed to parse ranking response:', response);
           continue;
         }
       } catch (modelError) {
-        console.warn(`⚠️ Model ${modelName} failed for context retrieval:`, modelError.message);
+        console.warn(`Model ${modelName} failed for context retrieval:`, modelError.message);
         continue;
       }
     }
   } catch (error) {
-    console.error("❌ Context retrieval error:", error);
+    console.error("Context retrieval error:", error);
   }
   }
 
-  // 2. Fallback: Keyword Search
-  console.log('⚠️ AI returned no results or failed. Switching to keyword fallback.');
+  // Fallback: Keyword Search
+  console.log('AI didn't work, using keyword search instead.');
   const queryTerms = userMessage.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-  
+
   if (queryTerms.length === 0) return [];
 
   const fallbackDocs = allCampusDocuments.filter(doc => {
@@ -308,7 +354,7 @@ Example: [1, 3, 7]`;
     return queryTerms.some(term => content.includes(term));
   });
 
-  console.log(`✅ Keyword fallback found ${fallbackDocs.length} documents`);
+  console.log(`Keyword fallback found ${fallbackDocs.length} documents`);
   return fallbackDocs.slice(0, 3);
 };
 
@@ -318,7 +364,7 @@ export const generateQuerySuggestions = async () => {
 
     for (const modelName of modelsToTry) {
       try {
-        console.log(`🔄 Trying model ${modelName} for suggestions`);
+        console.log('Trying model', modelName, 'for suggestions');
         const model = genAI.getGenerativeModel({ model: modelName });
 
         const prompt = `
@@ -335,7 +381,7 @@ export const generateQuerySuggestions = async () => {
         const text = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
         return JSON.parse(text);
       } catch (modelError) {
-        console.warn(`⚠️ Model ${modelName} failed for suggestions:`, modelError.message);
+        console.warn(`Model ${modelName} failed for suggestions:`, modelError.message);
         continue;
       }
     }
@@ -350,7 +396,7 @@ export const generateQuerySuggestions = async () => {
       "Opportunities for 2nd year students"
     ];
   } catch (error) {
-    console.error("❌ Error generating suggestions:", error);
+    console.error("Error generating suggestions:", error);
     return [
       "Internships for computer science students",
       "Workshops on AI and machine learning",
@@ -364,8 +410,8 @@ export const generateQuerySuggestions = async () => {
 // AI Metrics for Demo Readiness
 
 /**
- * Calculate Precision@5: fraction of top 5 results that are relevant
- * Assume relevant if AI score >= 7
+ * Calculates how many of the top 5 results are actually good
+ * Counts as good if score is 7 or higher
  */
 export const calculatePrecisionAt5 = (recommendations) => {
   if (!recommendations || recommendations.length === 0) return 0;
@@ -376,8 +422,8 @@ export const calculatePrecisionAt5 = (recommendations) => {
 };
 
 /**
- * Calculate Recall@10: fraction of relevant items retrieved in top 10
- * Assume relevant if AI score >= 7, and total relevant is all with score >=7
+ * Calculates how many relevant items we found in the top 10
+ * Relevant means score 7 or higher
  */
 export const calculateRecallAt10 = (recommendations, allOpportunities) => {
   if (!recommendations || recommendations.length === 0) return 0;
@@ -394,7 +440,7 @@ export const calculateRecallAt10 = (recommendations, allOpportunities) => {
 };
 
 /**
- * Track response time for AI calls
+ * Tracks how long AI calls take
  */
 export const trackResponseTime = async (aiFunction, ...args) => {
   const startTime = Date.now();
@@ -402,18 +448,18 @@ export const trackResponseTime = async (aiFunction, ...args) => {
     const result = await aiFunction(...args);
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    console.log(`⏱️ AI Response Time: ${responseTime}ms`);
+    console.log(`AI Response Time: ${responseTime}ms`);
     return { result, responseTime };
   } catch (error) {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    console.error(`❌ AI Error after ${responseTime}ms:`, error);
+    console.error(`AI Error after ${responseTime}ms:`, error);
     throw error;
   }
 };
 
 /**
- * Get AI metrics summary
+ * Summarizes the AI performance metrics
  */
 export const getAIMetrics = (recommendations, allOpportunities) => {
   const precisionAt5 = calculatePrecisionAt5(recommendations);

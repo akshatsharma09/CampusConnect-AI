@@ -3,15 +3,17 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { fetchOpportunities } from '../services/opportunityService';
 import { askCampusAssistant } from '../services/campusChatbot';
+import { searchOpportunitiesWithAI } from '../services/aiSearch';
 import OpportunityCard from '../components/OpportunityCard';
 import MagicSearchBar from '../components/MagicSearchBar';
 import UserProfile from '../components/UserProfile';
 import CampusAssistant from '../components/CampusAssistant';
 
-const Home = ({ user }) => {
+const Home = () => {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [, setUserProfile] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredOpportunities, setFilteredOpportunities] = useState([]);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -44,22 +46,38 @@ const Home = ({ user }) => {
     }
   }, []);
 
-  // Filter opportunities based on search
-  useEffect(() => {
-    if (searchQuery.trim()) {
+  const handleSearchSubmit = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setSearchLoading(true);
+    try {
+      const aiResults = await searchOpportunitiesWithAI(searchQuery, opportunities);
+
+      // Map AI results to full opportunity objects with additional data
+      const fullOpportunities = aiResults.map(rec => {
+        const opp = opportunities.find(o => o.id === rec.opportunityId);
+        if (!opp) return null;
+
+        return {
+          ...opp,
+          combinedScore: rec.combinedScore,
+          explanation: rec.explanation
+        };
+      }).filter(Boolean).sort((a, b) => b.combinedScore - a.combinedScore);
+
+      setFilteredOpportunities(fullOpportunities);
+    } catch (error) {
+      console.error('AI search failed:', error);
+      // Fallback to basic search
       const filtered = opportunities.filter(opp =>
         opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         opp.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredOpportunities(filtered.slice(0, 3));
-    } else {
-      setFilteredOpportunities(opportunities.slice(0, 3));
+      setFilteredOpportunities(filtered.slice(0, 5));
+    } finally {
+      setSearchLoading(false);
     }
-  }, [searchQuery, opportunities]);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    // Search is handled in useEffect
   };
 
   const handleProfileSubmit = (profile) => {
@@ -134,6 +152,7 @@ const Home = ({ user }) => {
             onSubmit={handleSearchSubmit}
             suggestions={suggestions}
             onSuggestionClick={handleSuggestionClick}
+            loading={searchLoading}
             showSuggestions={searchQuery.length > 0}
           />
         </div>
@@ -168,6 +187,8 @@ const Home = ({ user }) => {
                 <OpportunityCard
                   key={opp.id}
                   opportunity={opp}
+                  reason={opp.explanation}
+                  rankingDetails={opp.combinedScore !== undefined ? { score: Math.round(opp.combinedScore * 100) } : undefined}
                 />
               ))}
             </div>
@@ -176,7 +197,7 @@ const Home = ({ user }) => {
       </main>
 
       {/* Footer with ChatBot */}
-      <CampusAssistant onSendMessage={askCampusAssistant} />
+      <CampusAssistant onSendMessage={(message) => askCampusAssistant(message, [], opportunities)} />
 
       {/* Profile Modal */}
       {showProfileModal && (

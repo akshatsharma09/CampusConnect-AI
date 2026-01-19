@@ -11,20 +11,22 @@ const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 
 /**
  * 🤖 CAMPUS-ONLY CHATBOT - AI-DRIVEN, NO KEYWORDS
- * 
+ *
  * FLOW:
  * 1. User submits query
- * 2. Gemini classifies intent (CAMPUS vs NON_CAMPUS) - NO keywords
+ * 2. Gemini classifies intent (OPPORTUNITY vs CAMPUS_INFO vs NON_CAMPUS) - NO keywords
  * 3. If NON_CAMPUS → refuse immediately
- * 4. If CAMPUS → retrieve relevant documents semantically (RAG)
- * 5. If no context found → refuse politely
- * 6. If context found → answer using strict system prompt (NO hallucination)
- * 
+ * 4. If OPPORTUNITY → search for opportunities and return recommendations
+ * 5. If CAMPUS_INFO → retrieve relevant documents semantically (RAG)
+ * 6. If no context found → refuse politely
+ * 7. If context found → answer using strict system prompt (NO hallucination)
+ *
  * Temperature: 0.3 for slightly more natural responses while maintaining strictness
  */
-export const askCampusAssistant = async (userMessage, campusContext = []) => {
+export const askCampusAssistant = async (userMessage, campusContext = [], opportunities = []) => {
   console.log('🤖 Campus Assistant received query:', userMessage);
   console.log('📚 Available campus context:', campusContext.length, 'documents');
+  console.log('🎯 Available opportunities:', opportunities.length);
 
   // ✅ VALIDATION 1: Check message is provided
   if (!userMessage || !userMessage.trim()) {
@@ -48,7 +50,13 @@ export const askCampusAssistant = async (userMessage, campusContext = []) => {
   try {
     // 🧠 STEP 1: AI-BASED INTENT VALIDATION (NO KEYWORDS)
     console.log('🧠 Step 1: Classifying intent semantically...');
-    const intent = await classifyCampusIntent(userMessage);
+    let intent = "CAMPUS_INFO"; // Default to CAMPUS_INFO for demo stability
+    try {
+      intent = await classifyCampusIntent(userMessage);
+    } catch (classificationError) {
+      console.warn('⚠️ Intent classification failed, defaulting to CAMPUS_INFO:', classificationError.message);
+      intent = "CAMPUS_INFO"; // Skip distinction if causing errors
+    }
 
     // 🚫 STEP 2: REFUSE NON-CAMPUS IMMEDIATELY
     if (intent === "NON_CAMPUS") {
@@ -61,11 +69,43 @@ export const askCampusAssistant = async (userMessage, campusContext = []) => {
       };
     }
 
-    // 🔍 STEP 3: RETRIEVE RELEVANT CONTEXT SEMANTICALLY (RAG)
+    // 🎯 STEP 3: HANDLE OPPORTUNITY QUERIES
+    if (intent === "OPPORTUNITY") {
+      console.log('🎯 Opportunity query detected, searching for opportunities...');
+
+      // Import search function dynamically to avoid circular dependency
+      const { searchOpportunitiesWithAI } = await import('./aiSearch');
+
+      const recommendations = await searchOpportunitiesWithAI(userMessage, opportunities);
+
+      if (!recommendations || recommendations.length === 0) {
+        return {
+          success: true,
+          message: "I couldn't find any matching opportunities for your query. Try different keywords or check the search bar for available opportunities.",
+          refusal: true,
+          noOpportunities: true
+        };
+      }
+
+      // Format recommendations as text response
+      const formattedResponse = recommendations
+        .map((rec, idx) => `${idx + 1}. **${rec.title}**\n   ${rec.description}\n   *Why recommended:* ${rec.explanation}`)
+        .join('\n\n');
+
+      return {
+        success: true,
+        message: `Here are some opportunities that match your query:\n\n${formattedResponse}`,
+        refusal: false,
+        isOpportunity: true,
+        recommendations: recommendations
+      };
+    }
+
+    // 🔍 STEP 4: RETRIEVE RELEVANT CONTEXT FOR CAMPUS_INFO (RAG)
     console.log('🔍 Step 2: Retrieving relevant campus context...');
     const relevantContext = await findRelevantCampusContext(userMessage, campusContext);
 
-    // ⚠️ STEP 4: REFUSE IF NO CONTEXT
+    // ⚠️ STEP 5: REFUSE IF NO CONTEXT
     if (!relevantContext || relevantContext.length === 0) {
       console.log('⚠️ No relevant campus context found');
       return {
@@ -76,7 +116,7 @@ export const askCampusAssistant = async (userMessage, campusContext = []) => {
       };
     }
 
-    // ✅ STEP 5: ANSWER WITH STRICT SYSTEM PROMPT (RAG-BASED)
+    // ✅ STEP 6: ANSWER WITH STRICT SYSTEM PROMPT (RAG-BASED)
     console.log('🚀 Step 3: Generating answer with retrieved context...');
 
     // Build context string from retrieved documents
@@ -104,7 +144,7 @@ Question:`;
 
 Answer based ONLY on the provided context. Do not add external knowledge or make assumptions.`;
 
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash-001",
       generationConfig: {
         temperature: 0.3, // ✅ Slightly higher for natural responses, but strict with context
@@ -134,7 +174,7 @@ Answer based ONLY on the provided context. Do not add external knowledge or make
       success: true,
       message: responseText,
       refusal: false,
-      isNonCampus: false
+      isCampusInfo: true
     };
 
   } catch (error) {

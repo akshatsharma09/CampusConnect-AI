@@ -5,29 +5,27 @@ import { db } from './firebase';
 const COLLECTION_NAME = 'campus_info';
 
 /**
- * Fetches all campus-related documents from Firestore
- * Used as context for the campus chatbot
+ * Gets all campus documents from the database for the chatbot
  */
 export const fetchCampusContext = async () => {
   try {
     const campusRef = collection(db, COLLECTION_NAME);
     const snapshot = await getDocs(campusRef);
     const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log('✅ Fetched campus documents:', docs.length);
+    console.log('Fetched campus documents:', docs.length);
     if (docs.length > 0) {
-      console.log('📚 Loaded topics:', docs.map(d => d.title).slice(0, 5).join(', ') + (docs.length > 5 ? '...' : ''));
+      console.log('Loaded topics:', docs.map(d => d.title).slice(0, 5).join(', ') + (docs.length > 5 ? '...' : ''));
     }
     return docs;
   } catch (error) {
-    console.error('❌ Error fetching campus context:', error);
+    console.error('Error fetching campus context:', error);
     return [];
   }
 };
 
 /**
- * Searches campus documents for relevant context
- * Returns documents matching a category or type
- * NOTE: This is a strict category filter, not the Gemini Semantic Search.
+ * Finds campus documents by category
+ * Just a simple filter, not the smart AI search
  */
 export const searchCampusContext = async (category = null) => {
   try {
@@ -40,16 +38,16 @@ export const searchCampusContext = async (category = null) => {
 
     const snapshot = await getDocs(campusQuery);
     const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log(`✅ Fetched ${docs.length} campus documents for category: ${category || 'all'}`);
+    console.log(`Fetched ${docs.length} campus documents for category: ${category || 'all'}`);
     return docs;
   } catch (error) {
-    console.error('❌ Error searching campus context:', error);
+    console.error('Error searching campus context:', error);
     return [];
   }
 };
 
 /**
- * Generates a response from Gemini AI using RAG (Retrieval-Augmented Generation)
+ * Asks Gemini AI for a response using the campus docs as context
  * @param {string} userQuery - The user's question
  * @param {Array} contextDocs - Array of campus documents to use as context
  * @returns {Promise<string>} - The AI response
@@ -57,7 +55,7 @@ export const searchCampusContext = async (category = null) => {
 export const getGeminiResponse = async (userQuery, contextDocs) => {
   try {
     if (!import.meta.env.VITE_GEMINI_API_KEY) {
-      console.error("❌ Gemini API Key is missing in .env");
+      console.error("Gemini API Key is missing in .env");
       return "Configuration Error: API Key missing.";
     }
 
@@ -87,14 +85,13 @@ export const getGeminiResponse = async (userQuery, contextDocs) => {
     const response = await result.response;
     return response.text();
   } catch (error) {
-    console.error("❌ Error generating AI response:", error);
+    console.error("Error generating AI response:", error);
     return "I'm having trouble connecting to the AI right now. Please try again later.";
   }
 };
 
 /**
- * Seeds campus database with sample campus information
- * Includes placements, internships, rules, events, etc.
+ * Adds sample campus info to the database for testing
  */
 export const seedCampusDatabase = async () => {
   const sampleCampusData = [
@@ -210,16 +207,16 @@ export const seedCampusDatabase = async () => {
         updatedAt: new Date()
       });
     }
-    console.log('✅ Campus database seeded with', sampleCampusData.length, 'documents');
+    console.log('Campus database seeded with', sampleCampusData.length, 'documents');
     console.log("Campus database seeded! Refresh to see new campus info.");
   } catch (error) {
-    console.error("❌ Error seeding campus database:", error);
+    console.error("Error seeding campus database:", error);
     // TODO: Replace with toast notification
   }
 };
 
-// 🛠️ Expose for console debugging
+// Expose for console debugging
 if (typeof window !== 'undefined') {
   window.seedCampus = seedCampusDatabase;
-  console.log('🛠️ Debug: window.seedCampus() is available in console');
+  console.log('Debug: window.seedCampus() is available in console');
 }

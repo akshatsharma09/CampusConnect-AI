@@ -16,6 +16,7 @@ build/
 .firebase/
 firebase-debug.log
 firestore-debug.log
+src/assets/firebase-service-account.json
 
 # IDE
 .vscode/

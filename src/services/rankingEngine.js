@@ -4,26 +4,19 @@ const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 
 /**
- * 🎯 EXPLAINABLE AI RANKING ENGINE
- * 
- * Ranks opportunities based on:
- * 1. Student's year and branch
- * 2. Skills/keywords from user query or profile
- * 3. Application deadline (urgent first)
- * 4. Campus-specific relevance
- * 
- * Returns clear, transparent ranking reasons visible to the user
+ * Ranks opportunities for students based on their profile, search query, deadlines, and campus fit.
+ * Gives clear reasons why each opportunity matches.
  */
 
 export const calculateRankingReasons = async (opportunities, userProfile, query) => {
-  console.log('🎯 Calculating ranking reasons for:', opportunities.length, 'opportunities');
+  console.log('Calculating ranking reasons for', opportunities.length, 'opportunities');
   
   if (!opportunities || opportunities.length === 0) {
     return {};
   }
 
   if (!API_KEY || !genAI) {
-    console.warn('⚠️ No API key, using fallback ranking');
+    console.warn('No API key, using fallback ranking');
     return generateFallbackReasons(opportunities, userProfile, query);
   }
 
@@ -76,17 +69,16 @@ Be concise and user-friendly. Focus on the strongest matching factors.`;
       .trim();
     
     const reasons = JSON.parse(text);
-    console.log('✅ Ranking reasons generated:', Object.keys(reasons).length);
+    console.log('Ranking reasons generated:', Object.keys(reasons).length);
     return reasons;
   } catch (error) {
-    console.error('❌ Error generating ranking reasons:', error);
+    console.error('Error generating ranking reasons:', error);
     return generateFallbackReasons(opportunities, userProfile, query);
   }
 };
 
 /**
- * Fallback ranking when AI is unavailable
- * Uses deterministic rules
+ * Simple ranking when AI isn't available
  */
 export const generateFallbackReasons = (opportunities, userProfile, query) => {
   const reasons = {};
@@ -131,7 +123,7 @@ export const generateFallbackReasons = (opportunities, userProfile, query) => {
     if (deadline) {
       const daysUntil = Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24));
       if (daysUntil > 0 && daysUntil <= 14) {
-        factors.push(`⏰ Deadline approaching (${daysUntil} days left)`);
+        factors.push(`Deadline approaching (${daysUntil} days left)`);
         score += 20;
       }
     }
@@ -165,7 +157,7 @@ export const generateFallbackReasons = (opportunities, userProfile, query) => {
 };
 
 /**
- * Generate human-friendly reason text
+ * Makes the reason text easy to read
  */
 const generateReasonText = (factors, opportunity) => {
   if (factors.length === 0) {
@@ -182,7 +174,7 @@ const generateReasonText = (factors, opportunity) => {
 };
 
 /**
- * Format date for display
+ * Formats dates nicely for display
  */
 const formatDate = (deadline) => {
   if (!deadline) return 'No deadline';
@@ -208,7 +200,7 @@ const formatDate = (deadline) => {
 };
 
 /**
- * Parse date and return Date object
+ * Turns date strings into Date objects
  */
 const parseDate = (deadline) => {
   try {
@@ -224,7 +216,7 @@ const parseDate = (deadline) => {
 };
 
 /**
- * Filter opportunities by campus verification
+ * Keeps only opportunities verified for the user's campus
  */
 export const filterByCampus = (opportunities, userCampus) => {
   if (!userCampus) return opportunities;
@@ -234,7 +226,7 @@ export const filterByCampus = (opportunities, userCampus) => {
 };
 
 /**
- * Sort opportunities by relevance score
+ * Orders opportunities by how relevant they are
  */
 export const sortByRelevance = (opportunities, reasons) => {
   return opportunities.sort((a, b) => {
