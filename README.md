@@ -315,6 +315,8 @@ API Rate Limits: Gemini has rate limits; monitor usage in production
 
 Environment Variables: Never commit `.env` to version control
 
+Secrets: Never commit service account JSON files (e.g., `service-account.json`) to version control
+
 ## 👤 Author
 
 Built and maintained by Akshat Sharma
